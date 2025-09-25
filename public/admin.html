@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>لوحة الأدمن</title>
+<style>
+  :root{--bg:#071021; --panel:rgba(255,255,255,0.03); --accent:#1d9bf0; --ok:#28a745; --danger:#dc3545}
+  body{margin:0;background:var(--bg); color:#fff; font-family:Tahoma, Arial; height:100vh; display:flex; flex-direction:column}
+  header{padding:12px 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03)}
+  .wrap{flex:1; display:flex; gap:16px; padding:18px; box-sizing:border-box}
+  .col{background:var(--panel); padding:12px; border-radius:10px; min-width:260px; max-width:320px}
+  .center{flex:1; display:flex; flex-direction:column; align-items:center; gap:12px; padding:12px}
+  .players-list li{display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px dashed rgba(255,255,255,0.03)}
+  .players-list button{margin-left:6px; padding:6px 8px; border-radius:6px; border:none; cursor:pointer}
+  .blue{background:#0b57a3} .red{background:#b02a37}
+  .small{font-size:13px; color:#ccc}
+  .teams-row{display:flex; gap:12px; width:100%; justify-content:space-between; align-items:center}
+  .team-box{flex:1; padding:10px; border-radius:8px; text-align:center}
+  .team-box h3{margin:6px 0}
+  .points{font-size:22px; font-weight:bold}
+  .icons-grid{display:grid; grid-template-columns:repeat(4,76px); gap:10px; justify-content:center; align-items:center}
+  .icons-grid img{width:76px; height:76px; border-radius:8px; opacity:0.3; transition:all .25s; border:2px solid transparent}
+  .icons-grid img.on{opacity:1; transform:translateY(-4px); box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+  .controls{display:flex; gap:8px; margin-top:8px}
+  .btn{padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:var(--accent); color:#fff}
+  .danger{background:var(--danger)}
+  .ok{background:var(--ok)}
+  footer{padding:12px; text-align:center; font-size:13px; color:#bbb}
+  .timer{font-weight:bold; font-size:18px; color:#ffd24d}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <strong>لوحة الأدمن</strong>
+    <div class="small">إدارة توزيع الفرق والدور واللفّة</div>
+  </div>
+  <div>
+    <button id="addPlayerBtn" class="btn">أضف لاعب</button>
+    <button id="resetBtn" class="btn danger">إعادة تعيين</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- قائمة اللاعبين غير الموزعين أو عامة -->
+  <div class="col">
+    <h3>قائمة اللاعبين</h3>
+    <ul id="playersList" class="players-list" style="max-height:56vh; overflow:auto"></ul>
+    <div style="margin-top:8px;">
+      <input id="manualName" placeholder="أدخل اسم لاعب للاختبار" style="width:100%; padding:8px; border-radius:6px; background:#071827; border:1px solid #123; color:#fff">
+    </div>
+    <div style="margin-top:8px;"><small class="small">انقر على اسم لاعب لتشغيل العجلة (بعد التعيين لفريق)</small></div>
+  </div>
+
+  <!-- منتصف: أيقونات + عجلة + معلومات الدور -->
+  <div class="center">
+    <div style="display:flex; gap:10px; align-items:center;">
+      <div style="text-align:center">
+        <div>اللاعب المختار:</div>
+        <div id="currentPlayerName" style="font-weight:bold; font-size:18px; margin-top:6px">—</div>
+      </div>
+      <div style="text-align:center">
+        <div>الوقت المتبقي:</div>
+        <div id="timer" class="timer">--</div>
+      </div>
+    </div>
+
+    <div class="icons-grid" id="iconsGrid">
+      <img src="anime.png" alt="anime" data-key="anime">
+      <img src="normal.png" alt="normal" data-key="normal">
+      <img src="games.png" alt="games" data-key="games">
+      <img src="map.png" alt="map" data-key="map">
+    </div>
+
+    <div class="controls">
+      <button id="spinBtn" class="btn">لفّ للاعب</button>
+      <button id="skipBtn" class="btn ok">تخطي (يعيد اختيار + نقطة)</button>
+      <button id="endTurnBtn" class="btn danger">إنهاء الدور</button>
+    </div>
+
+    <div style="margin-top:8px;">
+      <small class="small">الموضوع الحالي: <span id="currentTopic">—</span></small>
+    </div>
+  </div>
+
+  <!-- العمود الأيمن: الفريقان -->
+  <div class="col">
+    <div class="teams-row">
+      <div class="team-box" style="background:rgba(13,63,121,0.12); border:1px solid rgba(13,63,121,0.25)">
+        <h3>الفريق الأزرق</h3>
+        <div class="points" id="bluePoints">0</div>
+        <div style="margin-top:8px;">
+          <button class="btn" id="bluePlus">+ نقطة</button>
+          <button class="btn danger" id="blueMinus">- نقطة</button>
+        </div>
+        <ul id="blueList" style="margin-top:12px; list-style:none; padding:0;"></ul>
+      </div>
+
+      <div style="width:8px"></div>
+
+      <div class="team-box" style="background:rgba(176,42,55,0.08); border:1px solid rgba(176,42,55,0.18)">
+        <h3>الفريق الأحمر</h3>
+        <div class="points" id="redPoints">0</div>
+        <div style="margin-top:8px;">
+          <button class="btn" id="redPlus">+ نقطة</button>
+          <button class="btn danger" id="redMinus">- نقطة</button>
+        </div>
+        <ul id="redList" style="margin-top:12px; list-style:none; padding:0;"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>افتح نافذة <b>player.html</b> للاعبين ليظهر لهم موضوعهم الخاص. يتم المزامنة باستخدام BroadcastChannel محلي.</footer>
+
+<script>
+/*
+  منطق العمل:
+  - الحالة المخزنة في localStorage: players[] و teams {blue, red} و currentTurn {playerId, topic, ts, endsAt}
+  - BroadcastChannel 'game-channel' تُرسل updateState و events
+*/
+
+// إعداد القناة
+const channel = new BroadcastChannel('game-channel');
+
+// أدوات DOM
+const playersList = document.getElementById('playersList');
+const blueList = document.getElementById('blueList');
+const redList = document.getElementById('redList');
+const bluePointsEl = document.getElementById('bluePoints');
+const redPointsEl = document.getElementById('redPoints');
+const playersManual = document.getElementById('manualName');
+const addPlayerBtn = document.getElementById('addPlayerBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+const iconsGrid = document.getElementById('iconsGrid');
+const iconImgs = Array.from(iconsGrid.querySelectorAll('img'));
+const spinBtn = document.getElementById('spinBtn');
+const skipBtn = document.getElementById('skipBtn');
+const endTurnBtn = document.getElementById('endTurnBtn');
+const currentPlayerName = document.getElementById('currentPlayerName');
+const timerEl = document.getElementById('timer');
+const currentTopicEl = document.getElementById('currentTopic');
+
+const bluePlus = document.getElementById('bluePlus');
+const blueMinus = document.getElementById('blueMinus');
+const redPlus = document.getElementById('redPlus');
+const redMinus = document.getElementById('redMinus');
+
+// الكلمات/المواضيع لكل خانة (تعديل هنا)
+const topics = {
+  anime: ["أنمي موضوع 1","أنمي موضوع 2","أنمي موضوع 3"],
+  normal: ["موضوع عام 1","موضوع عام 2","موضوع عام 3"],
+  games: ["ألعاب موضوع 1","ألعاب موضوع 2","ألعاب موضوع 3"],
+  map: ["جغرافيا موضوع 1","جغرافيا موضوع 2","جغرافيا موضوع 3"]
+};
+
+// helpers لوضع/قراءة الحالة
+function loadState(){
+  const players = JSON.parse(localStorage.getItem('players')||'[]');
+  const teams = JSON.parse(localStorage.getItem('teams')||'{"blue":0,"red":0}');
+  const currentTurn = JSON.parse(localStorage.getItem('currentTurn')||'null');
+  return {players, teams, currentTurn};
+}
+function saveState(s){
+  if (s.players) localStorage.setItem('players', JSON.stringify(s.players));
+  if (s.teams) localStorage.setItem('teams', JSON.stringify(s.teams));
+  if (s.currentTurn !== undefined) localStorage.setItem('currentTurn', JSON.stringify(s.currentTurn));
+  // إبلاغ النوافذ الأخرى
+  channel.postMessage({type:'stateUpdate', state: {players: s.players, teams: s.teams, currentTurn: s.currentTurn}, ts: Date.now()});
+}
+
+// UI تحديث
+function render(){
+  const {players, teams, currentTurn} = loadState();
+  playersList.innerHTML=''; blueList.innerHTML=''; redList.innerHTML='';
+  bluePointsEl.textContent = teams.blue ?? 0;
+  redPointsEl.textContent = teams.red ?? 0;
+  currentPlayerName.textContent = (currentTurn && currentTurn.playerId) ? ((players.find(p=>p.id===currentTurn.playerId)||{}).name || '—') : '—';
+  currentTopicEl.textContent = (currentTurn && currentTurn.topic) ? currentTurn.topic : '—';
+
+  // قائمة عامة (غير موزعين)
+  players.forEach(p=>{
+    // عنصر في قائمة عامة
+    const li = document.createElement('li');
+    li.innerHTML = `<span style="flex:1">${escapeHtml(p.name)} ${p.team?(' ('+(p.team==='blue'?'أزرق':'أحمر')+')') : ''}</span>`;
+    // أزرار تعيين
+    const btns = document.createElement('span');
+    const assignBlue = document.createElement('button'); assignBlue.textContent='أزرق'; assignBlue.className='blue';
+    const assignRed = document.createElement('button'); assignRed.textContent='أحمر'; assignRed.className='red';
+    const kick = document.createElement('button'); kick.textContent='طرد'; kick.className='danger';
+    assignBlue.onclick = ()=>assignTeam(p.id,'blue');
+    assignRed.onclick = ()=>assignTeam(p.id,'red');
+    kick.onclick = ()=>kickPlayer(p.id);
+    btns.appendChild(assignBlue); btns.appendChild(assignRed); btns.appendChild(kick);
+    li.appendChild(btns);
+    playersList.appendChild(li);
+  });
+
+  // فرق منفصلة
+  players.filter(p=>p.team==='blue').forEach(p=>{
+    const li = document.createElement('li'); li.textContent = `${p.name} (${p.points||0} نقطة)`;
+    li.style.padding='6px 0';
+    li.onclick = ()=>onPlayerClicked(p.id);
+    blueList.appendChild(li);
+  });
+  players.filter(p=>p.team==='red').forEach(p=>{
+    const li = document.createElement('li'); li.textContent = `${p.name} (${p.points||0} نقطة)`;
+    li.style.padding='6px 0';
+    li.onclick = ()=>onPlayerClicked(p.id);
+    redList.appendChild(li);
+  });
+
+  // تسليط الضوء على الأيقونات إن كان هناك اختيار جارٍ
+  iconImgs.forEach(img=> img.classList.remove('on'));
+  if (currentTurn && currentTurn.iconKey){
+    const el = iconImgs.find(i=>i.dataset.key===currentTurn.iconKey);
+    if (el) el.classList.add('on');
+  }
+
+  // timer display
+  if (currentTurn && currentTurn.endsAt){
+    const secondsLeft = Math.max(0, Math.ceil((currentTurn.endsAt - Date.now())/1000));
+    timerEl.textContent = secondsLeft + 's';
+  } else timerEl.textContent = '--';
+}
+
+// تعيين فريق
+function assignTeam(playerId, team){
+  const s = loadState();
+  s.players = s.players.map(p => p.id===playerId? {...p, team}: p);
+  saveState(s);
+  render();
+}
+
+// طرد
+function kickPlayer(playerId){
+  const s = loadState();
+  s.players = s.players.filter(p => p.id !== playerId);
+  saveState(s);
+  render();
+}
+
+// إضافة لاعب يدويًا
+addPlayerBtn.addEventListener('click', ()=>{
+  const name = playersManual.value.trim();
+  if (!name) return alert('ادخل اسم اللاعب');
+  const id = 'p-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+  const s = loadState();
+  s.players.push({id, name, role:'player', team:null, points:0});
+  playersManual.value='';
+  saveState(s);
+  render();
+});
+
+// إعادة تعيين
+resetBtn.addEventListener('click', ()=>{
+  if (!confirm('إعادة تعيين كل شيء؟')) return;
+  localStorage.removeItem('players'); localStorage.removeItem('teams'); localStorage.removeItem('currentTurn');
+  channel.postMessage({type:'reset', ts: Date.now()});
+  render();
+});
+
+// نقاط الفرق +/-
+bluePlus.addEventListener('click', ()=> changeTeamPoints('blue', +1));
+blueMinus.addEventListener('click', ()=> changeTeamPoints('blue', -1));
+redPlus.addEventListener('click', ()=> changeTeamPoints('red', +1));
+redMinus.addEventListener('click', ()=> changeTeamPoints('red', -1));
+
+function changeTeamPoints(team, delta){
+  const s = loadState();
+  s.teams[team] = (s.teams[team]||0) + delta;
+  // حفظ وتبليغ
+  saveState(s);
+  render();
+}
+
+// عندما ينقر الأدمن على لاعب (بعد التعيين) -> يدور العجلة ويختار خانة عشوائية
+let spinning = false;
+function onPlayerClicked(playerId){
+  const s = loadState();
+  const player = s.players.find(p=>p.id===playerId);
+  if (!player) return;
+  if (!player.team) return alert('يجب تعيين لاعب إلى فريق أولاً.');
+  // نخزن اللاعب الذي سيبدأ الدور
+  startSpinForPlayer(playerId);
+}
+
+function startSpinForPlayer(playerId){
+  if (spinning) return;
+  spinning = true;
+  // دوران رمزي: تضيء الصور بالتتابع ثم تتباطأ وتتوقف على واحدة عشوائية
+  const order = [...iconImgs];
+  let rounds = 10 + Math.floor(Math.random()*6);
+  let i = 0;
+  let delay = 80;
+  function step(){
+    iconImgs.forEach(img => img.classList.remove('on'));
+    order[i % order.length].classList.add('on');
+    i++;
+    if (rounds-- > 0){
+      setTimeout(step, delay);
+      delay = Math.min(400, delay + 30);
+    } else {
+      // انتهى الدور – اختر العنصر النهائي
+      const final = order[(i-1) % order.length];
+      const key = final.dataset.key;
+      // اختر موضوع عشوائي من topics[key]
+      const topicList = topics[key] || ['موضوع عام'];
+      const topic = topicList[Math.floor(Math.random()*topicList.length)];
+      // أنشئ currentTurn: playerId, topic, iconKey, endsAt (60s from now)
+      const endsAt = Date.now() + 60*1000;
+      const s = loadState();
+      s.currentTurn = { playerId, topic, iconKey: key, startedAt: Date.now(), endsAt };
+      saveState(s);
+      // نبلّغ الباقي ونبدأ العداد
+      channel.postMessage({type:'startTurn', turn: s.currentTurn, ts: Date.now()});
+      spinning=false;
+      render();
+      // ابدأ عداد محلي لتحديث الواجهة
+      startLocalTimer();
+    }
+  }
+  step();
+}
+
+// زر التخطي: يعيد اختيار ويمنح نقطة للفريق صاحب اللاعب ثم يبدأ دقيقة أيضاً
+skipBtn.addEventListener('click', ()=>{
+  const s = loadState();
+  const turn = s.currentTurn;
+  if (!turn || !turn.playerId) return alert('لا يوجد دور حالي للتخطي');
+  // امنح نقطة لفريق اللاعب
+  const ply = s.players.find(p=>p.id===turn.playerId);
+  if (ply && ply.team) {
+    s.teams[ply.team] = (s.teams[ply.team]||0) + 1;
+  }
+  // أعد الفلّب (spin) لنفس اللاعب: فقط نستدعي startSpinForPlayer لكن نحتاج id
+  saveState(s);
+  startSpinForPlayer(turn.playerId);
+});
+
+// إنهاء الدور يدويًا
+endTurnBtn.addEventListener('click', ()=>{
+  const s = loadState();
+  s.currentTurn = null;
+  saveState(s);
+  channel.postMessage({type:'endTurn', ts: Date.now()});
+  render();
+});
+
+// مؤقت محلي للتحديث
+let localTimerInterval = null;
+function startLocalTimer(){
+  if (localTimerInterval) clearInterval(localTimerInterval);
+  localTimerInterval = setInterval(()=>{
+    const s = loadState();
+    if (!s.currentTurn || !s.currentTurn.endsAt){
+      clearInterval(localTimerInterval);
+      localTimerInterval = null;
+      render();
+      return;
+    }
+    if (Date.now() >= s.currentTurn.endsAt){
+      // انتهاء المدة
+      clearInterval(localTimerInterval);
+      localTimerInterval = null;
+      // منح نقاط: لنفترض أن كل كلمة أو نجاح نقطة تُحسب من جهة سطر آخر — هنا سنقوم فقط بإنهاء الدور وإبلاغ الجميع
+      s.currentTurn = null;
+      saveState(s);
+      channel.postMessage({type:'endTurn', ts: Date.now()});
+      render();
+    } else render();
+  }, 500);
+}
+
+// BroadcastChannel: استقبال التحديثات من player.html أو login
+channel.onmessage = (ev)=>{
+  const data = ev.data || {};
+  if (data.type === 'playerJoin' || data.type === 'stateUpdate' || data.type === 'reset' || data.type === 'startTurn' || data.type === 'endTurn'){
+    // عندما يصل حدث stateUpdate أو playerJoin، نأخذ من localStorage
+    render();
+  }
+};
+
+// عند تحميل الصفحة: تأكد من وجود الهيكل الافتراضي
+(function initState(){
+  const s = loadState();
+  if (!s.teams) {
+    localStorage.setItem('teams', JSON.stringify({blue:0, red:0}));
+  }
+  // ensure players array exists
+  if (!Array.isArray(s.players)) localStorage.setItem('players', JSON.stringify([]));
+  render();
+})();
+
+// مساعدة للـ XSS
+function escapeHtml(unsafe){ return String(unsafe).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+
+</script>
+</body>
+</html>

@@ -1,255 +1,41 @@
 body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* لكي يبدأ المحتوى من الأعلى */
-    min-height: 100vh;
-    padding: 20px;
-    box-sizing: border-box;
-    overflow-y: auto; /* للسماح بالتمرير إذا كان المحتوى طويلاً */
-    position: relative;
-    direction: rtl; /* لضبط اتجاه النص من اليمين لليسار */
+  margin: 0;
+  font-family: Tahoma, sans-serif;
+  text-align: center;
+  color: white;
 }
 
-.background-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: -2;
+.background {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
 }
 
-.background-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* لضمان ملء الصورة للمساحة دون تشويه */
-    filter: brightness(0.6); /* لجعل الخلفية داكنة قليلاً لإبراز المحتوى */
-}
-
-.site-icon {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 50px; /* حجم الشعار */
-    height: 50px;
-    z-index: 10;
+.icon {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  width: 60px;
+  height: 60px;
+  z-index: 10;
 }
 
 .screen {
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    width: 100%;
-    max-width: 800px;
-    text-align: center;
-    display: none; /* يتم التحكم في عرضها بواسطة JS */
-    z-index: 1; /* ليكون فوق الخلفية */
-    margin-top: 50px; /* لترك مساحة للشعار */
+  margin-top: 100px;
+  background: rgba(0,0,0,0.5);
+  display: inline-block;
+  padding: 20px;
+  border-radius: 10px;
 }
 
-.screen.active {
-    display: block;
+.hidden {
+  display: none;
 }
 
-h1, h2, h3 {
-    color: #0056b3;
-    margin-bottom: 20px;
-}
-
-input[type="text"], input[type="number"], select {
-    width: calc(100% - 20px);
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 16px;
-    box-sizing: border-box;
-    text-align: right; /* لمحاذاة النص داخل المدخلات لليمين */
-}
-
-button {
-    background-color: #007bff;
-    color: white;
-    padding: 12px 25px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-    margin: 5px;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-.error-message {
-    color: #dc3545;
-    margin-top: 10px;
-    font-weight: bold;
-}
-
-/* Admin Screen Specific Styles */
-#player-list-admin {
-    list-style: none;
-    padding: 0;
-    margin-top: 20px;
-}
-
-#player-list-admin li {
-    background-color: #e9ecef;
-    padding: 10px 15px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap; /* للسماح بالعناصر بالانتقال إلى سطر جديد */
-}
-
-#player-list-admin li .player-info {
-    font-weight: bold;
-    color: #343a40;
-    flex-grow: 1;
-    text-align: right;
-}
-
-#player-list-admin li .team-buttons button {
-    margin-left: 5px; /* مسافة بين الأزرار */
-    padding: 8px 15px;
-    font-size: 14px;
-}
-
-.team-buttons .blue-button {
-    background-color: #007bff;
-}
-.team-buttons .blue-button:hover {
-    background-color: #0056b3;
-}
-.team-buttons .red-button {
-    background-color: #dc3545;
-}
-.team-buttons .red-button:hover {
-    background-color: #c82333;
-}
-
-/* Team Display Styles */
-.teams-display {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 30px;
-    flex-wrap: wrap;
-}
-
-.team {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 20px;
-    width: 45%;
-    min-width: 300px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.team.blue-team {
-    border-color: #007bff;
-}
-.team.red-team {
-    border-color: #dc3545;
-}
-
-.team h3 {
-    margin-top: 0;
-    font-size: 24px;
-}
-
-.team ul {
-    list-style: none;
-    padding: 0;
-    margin-top: 15px;
-}
-
-.team li {
-    padding: 8px 0;
-    border-bottom: 1px dashed #e9ecef;
-    font-size: 18px;
-    color: #495057;
-}
-
-.team li:last-child {
-    border-bottom: none;
-}
-
-.team p {
-    font-size: 20px;
-    font-weight: bold;
-    margin-top: 15px;
-}
-
-/* Game Control Specific Styles */
-.game-control {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: #e0f7fa;
-    border-radius: 8px;
-    border: 1px solid #00bcd4;
-}
-
-.game-control button {
-    margin: 8px;
-}
-
-#current-word-display-admin, #current-word-display-player {
-    font-size: 2.5em;
-    font-weight: bold;
-    color: #28a745;
-    margin: 20px 0;
-    display: block;
-}
-
-#admin-timer-display, #player-timer-display {
-    font-size: 1.5em;
-    color: #ffc107;
-}
-
-/* Logout button specific styling */
-button[id^="logout-button"] {
-    background-color: #6c757d;
-    margin-top: 30px;
-}
-
-button[id^="logout-button"]:hover {
-    background-color: #5a6268;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .screen {
-        padding: 20px;
-        margin-top: 20px;
-    }
-    .site-icon {
-        top: 10px;
-        right: 10px;
-        width: 40px;
-        height: 40px;
-    }
-    .team {
-        width: 100%;
-        min-width: unset;
-    }
-    #player-list-admin li {
-        flex-direction: column;
-        align-items: flex-end;
-    }
-    #player-list-admin li .team-buttons {
-        margin-top: 10px;
-    }
+ul {
+  list-style: none;
+  padding: 0;
 }

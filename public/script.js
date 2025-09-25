@@ -1,373 +1,173 @@
-// script.js
-// يجب أن يكون الخادم (server.js) يعمل وأن يكون ملف socket.io.js مضافاً في index.html
+// =========================================================
+// 1. الإعدادات والاتصال (تصحيح الاتصال للعمل على Render)
+// =========================================================
+const socket = io(); // الاتصال بدون تحديد localhost للعمل على Render
 
-// 1. إعداد الاتصال والثوابت
-const SOCKET_SERVER_URL = 'http://localhost:3000'; 
-const GAME_DURATION = 60; // 60 ثانية للعبة
-
-// يرجى تغيير العنوان إذا لم يكن الخادم يعمل محلياً أو على نفس المنفذ
-const socket = io(SOCKET_SERVER_URL); 
-
-// حالة المستخدم واللعبة (يتم تحديثها من الخادم)
+// المتغيرات الرئيسية للحالة (state)
 let currentLoggedInUser = null;
-let currentRole = null;
-let activePlayersData = []; 
+let activePlayersData = [];
 let gameTimerInterval = null;
-let gameTimeRemaining = 0;
-let currentPlayerPlaying = null; 
-let currentPlayerWordCount = 0; 
-const gameWords = ["برمجة", "تطوير", "جافاسكريبت", "قاعدة", "بيانات", "خوارزمية", "واجهة", "مستخدم", "خادم", "شبكة", "إخراج", "أتمتة", "تطبيق", "سحابية", "خلفية"];
 let currentWordIndex = 0;
+const gameWords = ["برمجة", "تطوير", "جافاسكريبت", "قاعدة", "بيانات", "خوارزمية", "واجهة", "مستخدم", "خادم", "شبكة", "إخراج", "أتمتة", "تطبيق", "سحابية", "خلفية"];
+const gameTopics = ["انمي", "عامة", "العاب", "جغرافيا"]; // خانات العجلة
 
+// =========================================================
+// 2. العناصر الرئيسية في DOM (تم تحديث المعرفات بناءً على الملفات الجديدة)
+// =========================================================
 
-// 2. العناصر الرئيسية في DOM (كما في الكود الأصلي)
+// الشاشات
 const loginScreen = document.getElementById('login-screen');
 const adminScreen = document.getElementById('admin-screen');
 const playerScreen = document.getElementById('player-screen');
 const spectatorScreen = document.getElementById('spectator-screen');
 
-const usernameInput = document.getElementById('username-input');
+// الإدخال وزر الدخول
+const usernameInput = document.getElementById('username-input'); // تم تصحيح المعرّف من 'username' إلى 'username-input'
 const loginButton = document.getElementById('login-button');
-const loginError = document.getElementById('login-error');
 
-const adminNameSpan = document.getElementById('admin-name');
-const playerWelcome = document.getElementById('player-welcome');
-const playerRoleInfo = document.getElementById('player-role-info');
-
-// قوائم اللاعبين
-const playerListAdmin = document.getElementById('player-list-admin');
+// القوائم وعرض النقاط
+const playerListAdmin = document.getElementById('player-list-admin'); // قائمة اللاعبين في شاشة المدير
 const blueTeamList = document.getElementById('blue-team-list');
 const redTeamList = document.getElementById('red-team-list');
-const blueTeamListSpectator = document.getElementById('blue-team-list-spectator');
-const redTeamListSpectator = document.getElementById('red-team-list-spectator');
+const bluePointsSpan = document.getElementById('blue-team-points');
+const redPointsSpan = document.getElementById('red-team-points');
 
-// نقاط الفرق
-const blueTeamPointsSpan = document.getElementById('blue-team-points');
-const redTeamPointsSpan = document.getElementById('red-team-points');
-const blueTeamPointsSpectatorSpan = document.getElementById('blue-team-points-spectator');
-const redTeamPointsSpectatorSpan = document.getElementById('red-team-points-spectator');
-
-// التحكم باللعبة (الادمن)
-const startWordGameButton = document.getElementById('start-word-game-button');
-const wordGameAdminControls = document.getElementById('word-game-admin-controls');
-const currentPlayerForGameSpan = document.getElementById('current-player-for-game');
-const currentWordDisplayAdmin = document.getElementById('current-word-display-admin');
-const adminTimerDisplay = document.getElementById('admin-timer-display');
-const nextWordButton = document.getElementById('next-word-button');
-const endGameButton = document.getElementById('end-game-button');
-
-// تعديل النقاط والطرد (الادمن)
+// عناصر التحكم بالمدير (تم إضافتها من الملف الثاني)
 const selectPlayerForPoints = document.getElementById('select-player-for-points');
 const pointsAmountInput = document.getElementById('points-amount');
 const addPointsButton = document.getElementById('add-points-button');
 const subtractPointsButton = document.getElementById('subtract-points-button');
-// يجب إضافة قائمة اختيار الطرد في HTML لتكون وظيفية بشكل كامل
-const selectPlayerForKick = document.getElementById('select-player-for-kick'); 
-const kickPlayerButton = document.getElementById('kick-player-button'); // يجب إضافة هذا الزر أيضاً
+const startWordGameButton = document.getElementById('start-word-game-button');
+const nextWordButton = document.getElementById('next-word-button'); // زر تخطي / كلمة أخرى
 
 // عرض اللعبة (اللاعب)
-const wordGamePlayerDisplay = document.getElementById('word-game-player-display');
 const currentWordDisplayPlayer = document.getElementById('current-word-display-player');
-const playerTimerDisplay = document.getElementById('player-timer-display');
-
-// أزرار تسجيل الخروج
-const logoutButtonAdmin = document.getElementById('logout-button-admin');
-const logoutButtonPlayer = document.getElementById('logout-button-player');
-const logoutButtonSpectator = document.getElementById('logout-button-spectator');
-
+const wheelImages = document.querySelectorAll('.image-wheel-container img'); // صور العجلة
 
 // =========================================================
-// 3. وظائف التحكم بالواجهة (Rendering Functions)
+// 3. وظائف التحكم بالواجهة
 // =========================================================
 
-// وظيفة لعرض الشاشات
+// وظيفة لتبديل الشاشات
 function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    document.getElementById(screenId).classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); // إزالة 'active' من الكل
+    
+    // التحقق من المعرّف وإضافة 'active'
+    if (screenId === 'admin') adminScreen.classList.add('active');
+    else if (screenId === 'spectator') spectatorScreen.classList.add('active');
+    else if (screenId === 'player') playerScreen.classList.add('active');
+    else loginScreen.classList.add('active'); // default to login
 }
 
-// تحديث قائمة اللاعبين في شاشة الادمن (مُرسل إليها من الخادم)
-function updateAdminPlayerList() {
+// تحديث القوائم وعرض النقاط (يشمل منطق عرض الفرق في شاشات اللاعبين والمشاهدين)
+function updateLists(state) {
+    activePlayersData = state.players; // حفظ الحالة
+    
+    // تنظيف قوائم الادمن والفرق
     playerListAdmin.innerHTML = '';
-    selectPlayerForPoints.innerHTML = '<option value="">اختر لاعبًا</option>';
-    // افتراض وجود عنصر selectPlayerForKick في HTML
-    if (selectPlayerForKick) selectPlayerForKick.innerHTML = '<option value="">اختر لاعبًا</option>'; 
-
-    const playersToManage = activePlayersData.filter(p => p.role === 'player');
-
-    playersToManage.forEach(player => {
-        const listItem = document.createElement('li');
-        listItem.innerHTML = `
-            <span class="player-info">${player.name} (${player.team ? (player.team === 'blue' ? 'أزرق' : 'أحمر') : 'بدون فريق'}) - النقاط: ${player.points}</span>
-            <div class="team-buttons">
-                <button class="blue-button" onclick="assignTeam('${player.id}', 'blue')">فريق أزرق</button>
-                <button class="red-button" onclick="assignTeam('${player.id}', 'red')">فريق أحمر</button>
-                <button class="kick-button" style="background-color: #6c757d;" onclick="kickPlayer('${player.id}')">طرد</button>
-            </div>
-        `;
-        playerListAdmin.appendChild(listItem);
-
-        // قوائم الاختيار للنقاط والطرد
-        const optionPoint = document.createElement('option');
-        optionPoint.value = player.id;
-        optionPoint.textContent = player.name;
-        selectPlayerForPoints.appendChild(optionPoint);
-        
-        if (selectPlayerForKick) {
-            const optionKick = optionPoint.cloneNode(true);
-            selectPlayerForKick.appendChild(optionKick);
-        }
-    });
-
-    // تحديث قائمة اللاعبين للاختيار لبدء اللعبة
-    updateGamePlayerSelect(playersToManage);
-}
-
-// تحديث عرض الفرق للاعبين والمشاهدين (مُرسل إليها من الخادم)
-function updatePlayerTeamDisplays(players, teams) {
     blueTeamList.innerHTML = '';
     redTeamList.innerHTML = '';
-    blueTeamListSpectator.innerHTML = '';
-    redTeamListSpectator.innerHTML = '';
+    selectPlayerForPoints.innerHTML = '<option value="">اختر لاعبًا</option>';
 
-    players.forEach(player => {
-        // إضافة فقط اللاعبين ذوي الدور 'player' إلى قوائم الفرق
-        if (player.role === 'player') { 
-            const listItem = document.createElement('li');
-            // إظهار اسم اللاعب ونقاطه فقط
-            listItem.textContent = `${player.name} (${player.points} نقطة)`;
+    // تحديث نقاط الفرق
+    bluePointsSpan.textContent = state.teams.blue || 0;
+    redPointsSpan.textContent = state.teams.red || 0;
+
+    state.players.forEach(player => {
+        const li = document.createElement('li');
+        li.textContent = `${player.name} (نقاط: ${player.points || 0})`;
+
+        if (player.role === 'admin' && currentLoggedInUser.role === 'admin') {
+            document.getElementById('admin-name').textContent = player.name; // تحديث اسم المدير
+        }
+
+        if (player.role === 'player') {
+            // منطق عرض قائمة الادمن (يظهر أزرار التوزيع)
+            if (currentLoggedInUser && currentLoggedInUser.role === 'admin') {
+                const adminLi = document.createElement('li');
+                adminLi.innerHTML = `
+                    <span class="player-info">${player.name} (${player.team ? (player.team === 'blue' ? 'أزرق' : 'أحمر') : 'بدون فريق'}) - النقاط: ${player.points || 0}</span>
+                    <div class="team-buttons">
+                        <button class="team-blue" onclick="assignTeam('${player.id}', 'blue')">فريق أزرق</button>
+                        <button class="team-red" onclick="assignTeam('${player.id}', 'red')">فريق أحمر</button>
+                    </div>
+                `;
+                playerListAdmin.appendChild(adminLi);
+                
+                // قائمة النقاط
+                const optionPoint = document.createElement('option');
+                optionPoint.value = player.id;
+                optionPoint.textContent = player.name;
+                selectPlayerForPoints.appendChild(optionPoint);
+            }
             
+            // منطق عرض قوائم الفرق (للاعبين والمشاهدين)
             if (player.team === 'blue') {
-                blueTeamList.appendChild(listItem.cloneNode(true));
-                blueTeamListSpectator.appendChild(listItem);
+                blueTeamList.appendChild(li.cloneNode(true));
             } else if (player.team === 'red') {
-                redTeamList.appendChild(listItem.cloneNode(true));
-                redTeamListSpectator.appendChild(listItem);
+                redTeamList.appendChild(li.cloneNode(true));
             }
         }
     });
-
-    blueTeamPointsSpan.textContent = teams.blue;
-    redTeamPointsSpan.textContent = teams.red;
-    blueTeamPointsSpectatorSpan.textContent = teams.blue;
-    redTeamPointsSpectatorSpan.textContent = teams.red;
 }
 
-// تحديث معلومات اللاعب الحالي إذا كان لاعبًا
-function updateCurrentPlayerInfo(player) {
-    if (currentRole === 'player') {
-        playerWelcome.querySelector('span').textContent = player.name;
-        playerRoleInfo.textContent = `دورك: لاعب | فريقك: ${player.team ? (player.team === 'blue' ? 'أزرق' : 'أحمر') : 'لم يتم التحديد'} | نقاطك: ${player.points}`;
-    }
-}
-
-// تحديث قائمة اختيار اللاعب لبدء جولة الكلمات (للمدير)
-function updateGamePlayerSelect(players) {
-    // يمكن هنا عرض قائمة لاختيار لاعب معين لبدء الجولة يدوياً (ميزة إضافية)
-    // لكن للاحتفاظ بالمنطق القديم: يتم الاختيار عشوائياً عند الضغط على الزر
-}
-
-
-// =========================================================
-// 4. وظائف الإرسال إلى الخادم (Client to Server)
-// =========================================================
-
-// وظيفة الإرسال لتوزيع الفريق
-window.assignTeam = (playerId, team) => {
-    socket.emit('assignTeam', { playerId, team });
-};
-
-// وظيفة الإرسال للطرد
-window.kickPlayer = (playerId) => {
-    if (confirm('هل أنت متأكد من طرد هذا اللاعب؟')) {
-        socket.emit('kickPlayer', playerId);
-    }
-};
-
-// وظيفة تسجيل الخروج الموحدة
-function logout() {
-    // قطع الاتصال بـ Socket.IO (سيؤدي إلى حذف اللاعب من قائمة الخادم)
-    socket.disconnect(); 
-    
-    currentLoggedInUser = null;
-    currentRole = null;
-    usernameInput.value = '';
-    
-    // إخفاء شاشات اللعبة والمحتوى
-    wordGameAdminControls.style.display = 'none';
-    startWordGameButton.style.display = 'block';
-    wordGamePlayerDisplay.style.display = 'none';
-    
-    showScreen('login-screen');
-    
-    // إعادة الاتصال لتمكين تسجيل الدخول مرة أخرى
-    // التأكد من أن السوكيت غير متصل قبل محاولة الاتصال
-    if (!socket.connected) {
-        socket.connect(); 
-    }
-}
-
-// وظيفة بدء جولة الكلمات (يرسل الأمر للخادم)
-function startWordGame() {
-    const eligiblePlayers = activePlayersData.filter(p => p.team && p.role === 'player');
-    if (eligiblePlayers.length === 0) {
-        alert('لا يوجد لاعبون في الفرق لبدء اللعبة!');
-        return;
-    }
-
-    // الاختيار العشوائي للاعب
-    currentPlayerPlaying = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
-    currentWordIndex = 0;
-    currentPlayerWordCount = 0;
-    
-    // إرسال طلب بدء الجولة للخادم، ليعلم الجميع من يلعب
-    socket.emit('requestStartGame', { playerId: currentPlayerPlaying.id });
-}
-
-// دالة الكلمة التالية (المدير يخبر الخادم، والخادم يخبر اللاعب)
-function requestNextWord() {
-    if (currentWordIndex < gameWords.length) {
-        const word = gameWords[currentWordIndex];
-        currentWordIndex++;
-        currentPlayerWordCount++; // زيادة عداد الكلمات المكتملة
-        socket.emit('nextWord', { word: word, index: currentWordIndex });
-    } else {
-        socket.emit('endGame');
-    }
-}
-
-// دالة إنهاء الجولة (المدير يخبر الخادم)
-function requestEndGame() {
-    socket.emit('endGame');
-}
-
-// =========================================================
-// 5. استقبال الأحداث من الخادم (Server to Client)
-// =========================================================
-
-// عند استلام تحديثات الحالة (اللاعبين والنقاط)
-socket.on('updateState', (data) => {
-    activePlayersData = data.players;
-    const teams = data.teams;
-    
-    updateAdminPlayerList();
-    updatePlayerTeamDisplays(activePlayersData, teams);
-    
-    // تحديث معلومات المستخدم الحالي إن كان مازال متصلاً
-    if (currentLoggedInUser) {
-        const updatedPlayer = activePlayersData.find(p => p.id === currentLoggedInUser.id);
-        if (updatedPlayer) {
-            currentLoggedInUser = updatedPlayer; 
-            updateCurrentPlayerInfo(updatedPlayer);
-        }
-    }
-});
-
-// معالجة الطرد من الخادم
-socket.on('kicked', (message) => {
-    alert(message);
-    logout(); 
-});
-
-// استقبال أمر بدء اللعبة من الخادم (لجميع المتصلين)
-socket.on('gameStarted', (data) => {
-    currentPlayerPlaying = data.playerId;
-    
-    // إظهار شاشة التحكم للمدير
-    if (currentRole === 'admin') {
-        currentPlayerForGameSpan.textContent = activePlayersData.find(p => p.id === data.playerId)?.name || 'غير معروف';
-        wordGameAdminControls.style.display = 'block';
-        startWordGameButton.style.display = 'none';
+// وظيفة محاكاة عجلة الاختيار وتحديد الموضوع
+function selectRandomTopic() {
+    // 1. محاكاة الإضاءة المنظمة
+    let currentIndex = 0;
+    const highlightInterval = setInterval(() => {
+        // إطفاء الكل
+        wheelImages.forEach(img => img.style.border = 'none');
         
-        // إعادة تعيين المؤقت وبدء العد التنازلي
-        gameTimeRemaining = GAME_DURATION;
-        adminTimerDisplay.textContent = gameTimeRemaining;
+        // إضاءة العنصر الحالي (إضافة تأثير مرئي خفيف)
+        wheelImages[currentIndex].style.border = '3px solid yellow';
         
-        // إرسال الكلمة الأولى فوراً
-        currentWordIndex = 0;
-        currentPlayerWordCount = 0;
-        requestNextWord(); 
+        currentIndex = (currentIndex + 1) % wheelImages.length;
+    }, 100); // إضاءة كل 100 ملي ثانية
 
-        // بدء المؤقت للمدير
-        clearInterval(gameTimerInterval);
-        gameTimerInterval = setInterval(() => {
-            gameTimeRemaining--;
-            adminTimerDisplay.textContent = gameTimeRemaining;
-            
-            if (gameTimeRemaining <= 0) {
-                requestEndGame(); // إرسال طلب إنهاء الجولة
-            }
-        }, 1000);
-    }
-    
-    // إظهار شاشة اللعبة للاعب الحالي
-    if (currentLoggedInUser && currentLoggedInUser.id === data.playerId) {
-        wordGamePlayerDisplay.style.display = 'block';
-    }
-});
+    // 2. إيقاف الإضاءة واختيار الموضوع بعد فترة
+    setTimeout(() => {
+        clearInterval(highlightInterval);
+        
+        // اختيار عشوائي للموضوع
+        const randomIndex = Math.floor(Math.random() * gameTopics.length);
+        const selectedTopic = gameTopics[randomIndex];
+        const selectedImage = wheelImages[randomIndex];
+        
+        // إضاءة الموضوع المختار فقط
+        wheelImages.forEach(img => img.style.border = 'none');
+        selectedImage.style.border = '3px solid #00ff00'; // إضاءة خضراء للمختار
+        
+        // إرسال الموضوع للخادم لبدء الجولة
+        socket.emit('topicSelected', selectedTopic);
+        
+        // بعد فترة، إطفاء الإضاءة وظهور الكلمة (الخادم سيعالج هذا)
+        setTimeout(() => {
+             wheelImages.forEach(img => img.style.border = 'none');
+             // الخادم سيبدأ إرسال الكلمة
+        }, 1500); 
 
-// استقبال الكلمة الجديدة من الخادم (لجميع المتصلين)
-socket.on('newWord', ({ word, index }) => {
-    currentWordDisplayAdmin.textContent = word;
-    currentWordDisplayPlayer.textContent = word;
-    
-    // تحديث المؤقت للاعبين إذا كانت الجولة بدأت بالفعل
-    if (currentLoggedInUser && currentLoggedInUser.id === currentPlayerPlaying) {
-        playerTimerDisplay.textContent = gameTimeRemaining;
-    }
-});
-
-// استقبال أمر إنهاء اللعبة من الخادم
-socket.on('gameEnded', (data) => {
-    clearInterval(gameTimerInterval);
-    gameTimerInterval = null;
-
-    if (currentRole === 'admin') {
-        alert(`جولة الكلمات انتهت! اللاعب ${activePlayersData.find(p => p.id === data.playerId)?.name || 'غير معروف'} أكمل ${data.wordCount} كلمات وحصل على ${data.pointsAdded} نقطة.`);
-        wordGameAdminControls.style.display = 'none';
-        startWordGameButton.style.display = 'block';
-    }
-    
-    currentWordDisplayAdmin.textContent = '';
-    currentWordDisplayPlayer.textContent = '';
-    wordGamePlayerDisplay.style.display = 'none'; 
-    currentPlayerPlaying = null;
-});
-
+    }, 3000); // تستمر العجلة بالدوران لمدة 3 ثواني
+}
 
 // =========================================================
-// 6. معالجات الأحداث (Event Listeners)
+// 4. معالجات الأحداث (Event Listeners)
 // =========================================================
 
 // تسجيل الدخول
 loginButton.addEventListener('click', () => {
     const username = usernameInput.value.trim();
     if (username) {
-        socket.emit('login', username); 
+        socket.emit('login', username);
     }
 });
 
-// استقبال نتيجة تسجيل الدخول من الخادم
-socket.on('loginSuccess', (player) => {
-    currentLoggedInUser = player;
-    currentRole = player.role;
-    usernameInput.value = '';
-    loginError.textContent = '';
-    
-    if (currentRole === 'admin') {
-        showScreen('admin-screen');
-        adminNameSpan.textContent = player.name;
-    } else if (currentRole === 'spectator') {
-        showScreen('spectator-screen');
-    } else {
-        showScreen('player-screen');
-        updateCurrentPlayerInfo(player);
-    }
-});
+// تعيين الفريق (تُستدعى من أزرار شاشة المدير)
+window.assignTeam = (playerId, team) => {
+    socket.emit('assignTeam', { playerId, team });
+};
 
-// معالج حدث تعديل النقاط (إرسال الأمر للخادم)
+// تعديل النقاط
 addPointsButton.addEventListener('click', () => {
     const playerId = selectPlayerForPoints.value;
     const amount = parseInt(pointsAmountInput.value);
@@ -375,7 +175,7 @@ addPointsButton.addEventListener('click', () => {
         socket.emit('updatePoints', { playerId, amount: amount });
         pointsAmountInput.value = '';
     } else {
-        alert('الرجاء اختيار لاعب وإدخال قيمة نقاط موجبة.');
+        alert('اختر لاعبًا وأدخل قيمة نقاط موجبة.');
     }
 });
 
@@ -386,37 +186,78 @@ subtractPointsButton.addEventListener('click', () => {
         socket.emit('updatePoints', { playerId, amount: -amount });
         pointsAmountInput.value = '';
     } else {
-        alert('الرجاء اختيار لاعب وإدخال قيمة نقاط موجبة.');
+        alert('اختر لاعبًا وأدخل قيمة نقاط موجبة.');
     }
 });
 
-// معالجات أحداث اللعبة (المدير)
-startWordGameButton.addEventListener('click', startWordGame);
-nextWordButton.addEventListener('click', requestNextWord);
-endGameButton.addEventListener('click', requestEndGame);
-
-
-// ربط أزرار تسجيل الخروج بالدالة الموحدة
-document.querySelectorAll('[id^="logout-button"]').forEach(button => {
-    button.addEventListener('click', logout);
+// بدء اللعبة (المدير)
+startWordGameButton.addEventListener('click', () => {
+    // المدير يختار اللاعب، ثم يدور العجلة
+    const eligiblePlayers = activePlayersData.filter(p => p.team && p.role === 'player');
+    if (eligiblePlayers.length === 0) return alert('لا يوجد لاعبون في الفرق!');
+    
+    // هنا يجب أن يتم اختيار اللاعب، لكن لتبسيط المنطق، سنختار عشوائيًا ونبدأ العجلة
+    const randomPlayer = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
+    socket.emit('playerSelected', randomPlayer.id); // إخبار الخادم باللاعب الذي سيلعب
+    
+    selectRandomTopic(); // تدوير العجلة لاختيار الموضوع
 });
 
-// عند بدء الاتصال الأولي أو إعادة الاتصال
-socket.on('connect', () => {
-    // إذا كان المستخدم مسجلاً بالفعل، يتم إعادته إلى شاشة تسجيل الدخول
-    // ويتم تحديث الحالة بواسطة 'updateState'
-    if (!currentLoggedInUser) {
-        showScreen('login-screen');
+// تخطي / كلمة أخرى (المدير)
+nextWordButton.addEventListener('click', () => {
+    socket.emit('nextWord'); // الخادم سيتولى عملية إضافة النقطة واختيار الكلمة التالية
+});
+
+// =========================================================
+// 5. استقبال الأحداث من الخادم (Server to Client)
+// =========================================================
+
+// عند استلام تحديثات الحالة (اللاعبين والنقاط)
+socket.on('updateState', (state) => {
+    updateLists(state);
+});
+
+// رد السيرفر عند النجاح
+socket.on('loginSuccess', (playerData) => {
+    currentLoggedInUser = playerData; // حفظ بيانات المستخدم الحالي
+    
+    if (playerData.role === 'admin') {
+        showScreen('admin');
+    } else if (playerData.role === 'spectator') {
+        showScreen('spectator');
     } else {
-         // محاولة إعادة تسجيل الدخول التلقائي في حال كان هناك اتصال سابق
-         // لكن الأفضل هو أن يطلب المستخدم تسجيل الدخول مجدداً لضمان التزامن
-         // أو عرض شاشة انتظار حتى يتم تحديث الحالة من الخادم
+        showScreen('player');
     }
 });
 
-// =========================================================
-// 7. ملاحظة هامة
-// =========================================================
+// رد السيرفر عند الخطأ
+socket.on('loginError', (msg) => {
+    alert("❌ خطأ: " + msg);
+    showScreen('login');
+});
 
-// *ملاحظة:* لكي يعمل كود script.js هذا بشكل صحيح، يجب أن يكون لديك ملف خادم (server.js) يعمل
-// ويجب أن يكون ملف index.html يحتوي على جميع عناصر DOM المشار إليها في هذا الكود.
+// استقبال الكلمة الجديدة (تظهر للاعب الحالي والمدير)
+socket.on('newWord', ({ word, topic }) => {
+    // تحديث شاشة المدير واللاعب الذي تم اختياره
+    if (currentLoggedInUser.role === 'admin') {
+        document.getElementById('current-word-display-admin').textContent = word;
+        document.getElementById('selected-topic-display').textContent = topic;
+    } 
+    
+    if (currentLoggedInUser.isTurn) { // يجب أن يحدد الخادم من دوره
+        currentWordDisplayPlayer.textContent = word;
+        document.getElementById('player-topic-info').textContent = topic;
+        // هنا يجب أن يبدأ مؤقت الـ 60 ثانية (يُفضل إدارته بالكامل من الخادم)
+    }
+});
+
+// معالجات تسجيل الخروج (إعادة التوصيل بعد قطع الاتصال)
+document.querySelectorAll('[id$="-button-admin"], [id$="-button-player"], [id$="-button-spectator"]').forEach(button => {
+    button.addEventListener('click', () => {
+        socket.emit('logout'); // إخبار الخادم بتسجيل الخروج
+        socket.disconnect();
+        currentLoggedInUser = null;
+        showScreen('login');
+        setTimeout(() => socket.connect(), 100); // إعادة محاولة الاتصال للدخول مجدداً
+    });
+});
