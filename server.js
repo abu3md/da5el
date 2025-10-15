@@ -8,7 +8,7 @@ const path = require('path');
 // **********************************************
 
 // **القيمة المطلوبة:** عدد الأسئلة الإجمالي في اللعبة.
-const NUM_QUESTIONS = 20; 
+const NUM_QUESTIONS = 18; 
 
 // الإعداد الأساسي
 const app = express();
