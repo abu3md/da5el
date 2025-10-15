@@ -1,25 +1,18 @@
 {
-  "name": "11-da5el",
+  "name": "quiz-game-static",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.cjs",
+  "description": "A static HTML/CSS/JS quiz game.",
+  "main": "public/script.js",
   "scripts": {
-    "start": "node server.cjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "echo 'This is a static site. No server needed for start.'",
+    "build": "echo 'No build steps required for static files.'"
   },
-  "keywords": [],
+  "keywords": [
+    "html",
+    "css",
+    "javascript",
+    "static"
+  ],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/abu3md/da5el.git"
-  },
-  "bugs": {
-    "url": "https://github.com/abu3md/da5el/issues"
-  },
-  "homepage": "https://github.com/abu3md/da5el#readme"
+  "license": "ISC"
 }
