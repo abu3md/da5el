@@ -1,8 +1,6 @@
 const ADMIN_USER = "sam123#";
-const GLOBAL_STORAGE_KEY = 'quiz_game_global_data';
-
-// قائمة الأسئلة والأجوبة
 const allQuestions = [
+    // ... (احتفظ بجميع أسئلتك هنا) ...
     { question: "ما هو الشيء الذي كلما أخذت منه كبر؟", answer: "الحفرة" },
     { question: "ما الشيء الذي يتكلم جميع لغات العالم؟", answer: "الصدى" },
     { question: "ما هو الشيء الذي إن دخل الماء لا يبتل؟", answer: "الظل" },
@@ -10,64 +8,25 @@ const allQuestions = [
 ];
 
 // ******************************************************
-// وظائف تخزين البيانات الوهمية (Local Data Simulation)
+// الإعداد لـ Socket.io (الربط بالخادم)
 // ******************************************************
 
-// هذه الوظيفة تحاكي جلب جميع بيانات اللاعبين المحفوظة في localStorage
-// (هذه هي النقطة التي يجب أن تستبدلها بجلب البيانات من الخادم الفعلي)
-function getAllPlayersDataLocally() {
-    const players = [];
-    // نستخدم keySet وهمي هنا لأننا لا نستطيع الوصول إلى جميع المفاتيح عبر localStorage في المتصفحات المختلفة.
-    // في بيئة حقيقية، سيقوم الخادم بإرسال هذه القائمة.
-    
-    // لغرض العرض، سنقوم فقط بإرجاع بيانات اللاعب الحالي (إذا كانت موجودة)
-    const currentUser = localStorage.getItem('current_user');
-    
-    // إنشاء مجموعة مفاتيح وهمية تمثل اللاعبين السابقين الذين دخلوا من هذا المتصفح
-    const localUsernames = new Set();
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key.startsWith('user_progress_')) {
-            localUsernames.add(key.replace('user_progress_', ''));
-        }
-    }
-    
-    localUsernames.forEach(name => {
-         if (name !== ADMIN_USER) {
-             const progress = parseInt(localStorage.getItem('user_progress_' + name) || 0);
-             players.push({
-                 name: name,
-                 progress: progress,
-                 errors: parseInt(localStorage.getItem('user_errors_' + name) || 0),
-                 time: "N/A",
-                 isFinished: progress >= allQuestions.length
-             });
-         }
-    });
+// الاتصال بالخادم. سيتم الاتصال تلقائياً بخادم Render الذي تشغل عليه الملف.
+const socket = io();
+let username = localStorage.getItem('current_user');
 
-    // فرز اللاعبين (بناءً على تقدمهم في هذا المتصفح فقط)
-    players.sort((a, b) => {
-        if (a.isFinished && !b.isFinished) return -1;
-        if (!a.isFinished && b.isFinished) return 1;
-        if (b.progress !== a.progress) return b.progress - a.progress;
-        return a.errors - b.errors;
-    });
+// ******************************************************
+// وظائف لوحة الترتيب (Leaderboard Functions)
+// ******************************************************
 
-    return players;
-}
-
-
-// وظيفة لتحديث لوحة الترتيب للاعب (عرض مختصر)
-function updatePlayerLeaderboard() {
+// دالة تحديث لوحة الترتيب بناءً على البيانات المستلمة من الخادم
+function updatePlayerLeaderboardDisplay(players) {
     const listElement = document.getElementById('leaderboard-list');
     if (!listElement) return;
 
-    // الآن نستخدم البيانات المحلية (التي تمثل اللاعبين الذين دخلوا من هذا المتصفح)
-    const players = getAllPlayersDataLocally();
-    listElement.innerHTML = ''; 
-    
+    listElement.innerHTML = '';
     if (players.length === 0) {
-         listElement.innerHTML = '<li>لا يوجد لاعبون مسجلون بعد.</li>';
+         listElement.innerHTML = '<li>جارٍ انتظار اللاعبين...</li>';
          return;
     }
 
@@ -75,13 +34,13 @@ function updatePlayerLeaderboard() {
         const rank = index + 1;
         const listItem = document.createElement('li');
         
-        // تمييز اللاعب الحالي
-        const currentUser = localStorage.getItem('current_user');
-        const isCurrentUser = (player.name === currentUser);
+        const isCurrentUser = (player.name === username);
 
-        listItem.className = 'leaderboard-item' + (rank === 1 ? ' rank-1' : '') + (isCurrentUser ? ' current-player' : '');
+        listItem.className = 'leaderboard-item' + 
+                              (rank === 1 ? ' rank-1' : '') + 
+                              (isCurrentUser ? ' current-player' : '');
 
-        const status = player.isFinished ? 'انتهى 🎉' : `سؤال ${player.progress + 1}/${allQuestions.length}`;
+        const status = player.progress >= allQuestions.length ? 'انتهى 🎉' : `سؤال ${player.progress + 1}/${allQuestions.length}`;
         const nameDisplay = isCurrentUser ? `${player.name} (أنت)` : player.name;
 
         listItem.innerHTML = `
@@ -92,17 +51,15 @@ function updatePlayerLeaderboard() {
     });
 }
 
-// وظيفة لتحديث لوحة الأدمن (عرض تفصيلي)
-function updateAdminLeaderboard() {
+// دالة تحديث لوحة الأدمن بناءً على البيانات المستلمة من الخادم
+function updateAdminLeaderboardDisplay(players) {
     const listElement = document.getElementById('admin-list');
     if (!listElement) return;
 
-    // جلب كل البيانات المحلية
-    const players = getAllPlayersDataLocally();
-    listElement.innerHTML = ''; 
+    listElement.innerHTML = '';
 
     if (players.length === 0) {
-         listElement.innerHTML = '<li class="leaderboard-item">لا يوجد بيانات لاعبين مسجلة محلياً.</li>';
+         listElement.innerHTML = '<li class="leaderboard-item">لا يوجد لاعبون مسجلون.</li>';
          return;
     }
 
@@ -111,45 +68,72 @@ function updateAdminLeaderboard() {
         const listItem = document.createElement('li');
         listItem.className = 'leaderboard-item' + (rank === 1 ? ' rank-1' : '');
 
-        const status = player.isFinished ? 'انتهى 🎉' : `سؤال ${player.progress + 1}/${allQuestions.length}`;
-        const timeDetail = 'N/A'; // لا يمكن تتبع الوقت بدقة بدون خادم
+        const status = player.progress >= allQuestions.length ? 'انتهى 🎉' : `سؤال ${player.progress + 1}/${allQuestions.length}`;
         
+        // الوقت والأخطاء تأتي من الخادم
+        const timeDetail = player.time || 'N/A'; 
+        const errors = player.errors || 0;
+
         listItem.innerHTML = `
             <span>#${rank} - ${player.name}</span>
             <span>${status}</span>
-            <span class="admin-detail-item">الوقت: ${timeDetail} | أخطاء: ${player.errors}</span>
+            <span class="admin-detail-item">الوقت: ${timeDetail} | أخطاء: ${errors}</span>
         `;
         listElement.appendChild(listItem);
     });
 }
 
+// ******************************************************
+// استقبال تحديثات Socket.io
+// ******************************************************
+
+// الاستماع لتحديثات الترتيب
+socket.on('leaderboardUpdate', (players) => {
+    if (window.location.pathname.endsWith('player.html')) {
+        updatePlayerLeaderboardDisplay(players);
+    } else if (window.location.pathname.endsWith('admin.html')) {
+        updateAdminLeaderboardDisplay(players);
+    }
+});
+
+// الاستماع لإعلان الفائز العالمي
+socket.on('globalWinner', (winnerName) => {
+    if (window.location.pathname.endsWith('player.html')) {
+        // إظهار رسالة الفائز العالمي لجميع اللاعبين
+        document.getElementById('winner-name').textContent = winnerName;
+        document.getElementById('global-winner').classList.remove('hidden');
+        document.getElementById('quiz-area').classList.add('hidden');
+        document.getElementById('win-message').classList.add('hidden');
+    }
+});
 
 // ******************************************************
-// وظائف منطق اللعبة (Game Logic)
+// وظائف منطق اللعبة
 // ******************************************************
 
 // 1. منطق تسجيل الدخول
 function login() {
+    // ... (الكود لم يتغير: يستخدم localStorage لتخزين 'current_user' فقط)
     const usernameInput = document.getElementById('usernameInput');
     const errorMessage = document.getElementById('error-message');
-    const username = usernameInput.value.trim();
+    const inputUsername = usernameInput.value.trim();
 
     errorMessage.textContent = ''; 
 
-    if (username === '') {
+    if (inputUsername === '') {
         errorMessage.textContent = 'الرجاء إدخال اسم المستخدم.';
         return;
     }
-
-    localStorage.setItem('current_user', username);
+    
+    // حفظ اسم المستخدم فقط محلياً
+    localStorage.setItem('current_user', inputUsername);
+    username = inputUsername; // تحديث المتغير المحلي
 
     if (username === ADMIN_USER) {
         window.location.href = 'admin.html';
     } else {
-        if (!localStorage.getItem('user_progress_' + username)) {
-            localStorage.setItem('user_progress_' + username, 0); 
-            localStorage.setItem('user_errors_' + username, 0); 
-        }
+        // **إرسال طلب الانضمام وتسجيل اللاعب الجديد للخادم**
+        socket.emit('playerJoin', username);
         window.location.href = 'player.html';
     }
 }
@@ -160,8 +144,7 @@ if (window.location.pathname.endsWith('player.html')) {
 }
 
 function initializePlayerPage() {
-    const username = localStorage.getItem('current_user');
-    const currentQuestionIndex = parseInt(localStorage.getItem('user_progress_' + username) || 0);
+    // ... (الكود لم يتغير: التحقق من اسم المستخدم والفائز)
 
     if (!username || username === ADMIN_USER) {
         window.location.href = 'login.html';
@@ -169,34 +152,28 @@ function initializePlayerPage() {
     }
 
     document.getElementById('displayName').textContent = username;
-
-    const globalData = JSON.parse(localStorage.getItem(GLOBAL_STORAGE_KEY) || '{}');
-    const winner = globalData.winner;
-
-    if (winner) {
-        document.getElementById('winner-name').textContent = winner;
-        document.getElementById('global-winner').classList.remove('hidden');
-        document.getElementById('quiz-area').classList.add('hidden');
-        document.getElementById('win-message').classList.add('hidden'); 
-        return;
-    }
-
-    if (currentQuestionIndex < allQuestions.length) {
-        displayQuestion(currentQuestionIndex);
-        
-        const quizArea = document.getElementById('quiz-area');
-        if (quizArea) {
-             quizArea.classList.remove('hidden');
-        }
-        
-    } else {
-        playerWins(username);
-    }
     
-    updatePlayerLeaderboard(); 
+    // **بدلاً من التحقق من localStorage، نطلب الحالة من الخادم**
+    socket.emit('requestPlayerStatus', username, (playerStatus) => {
+        if (playerStatus.isWinner) {
+             socket.emit('requestGlobalWinner'); // لضمان عرض الفائز
+             return;
+        }
+
+        if (playerStatus.progress < allQuestions.length) {
+            displayQuestion(playerStatus.progress);
+            document.getElementById('quiz-area').classList.remove('hidden');
+        } else {
+            playerWins(username); // إذا كان تقدمه مكتملًا
+        }
+    });
+
+    // نطلب آخر تحديث للوحة الترتيب عند التحميل
+    socket.emit('requestLeaderboard');
 }
 
 function displayQuestion(index) {
+    // ... (الكود لم يتغير)
     const questionElement = document.getElementById('currentQuestion');
     const feedbackElement = document.getElementById('feedback');
     const inputElement = document.getElementById('answerInput');
@@ -211,61 +188,58 @@ function displayQuestion(index) {
 }
 
 function checkAnswer() {
-    const username = localStorage.getItem('current_user');
-    let currentQuestionIndex = parseInt(localStorage.getItem('user_progress_' + username) || 0);
+    if (!username) return; 
 
-    if (currentQuestionIndex >= allQuestions.length) {
-        return;
-    }
-
-    const userAnswer = document.getElementById('answerInput').value.trim();
-    const feedbackElement = document.getElementById('feedback');
-    const correctAnswer = allQuestions[currentQuestionIndex].answer;
-
-    feedbackElement.classList.remove('correct', 'incorrect');
-
-    if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
-        feedbackElement.textContent = 'إجابة صحيحة! ننتقل للسؤال التالي.';
-        feedbackElement.classList.add('correct');
-
-        currentQuestionIndex++;
-        localStorage.setItem('user_progress_' + username, currentQuestionIndex);
-
-        setTimeout(() => {
-            if (currentQuestionIndex < allQuestions.length) {
-                displayQuestion(currentQuestionIndex);
-            } else {
-                playerWins(username); 
-            }
-            updatePlayerLeaderboard(); 
-        }, 1500);
-
-    } else {
-        let errors = parseInt(localStorage.getItem('user_errors_' + username) || 0);
-        errors++;
-        localStorage.setItem('user_errors_' + username, errors);
+    // **نطلب التقدم الحالي من الخادم للتحقق من الإجابة**
+    socket.emit('requestPlayerStatus', username, (playerStatus) => {
+        let currentQuestionIndex = playerStatus.progress;
         
-        feedbackElement.textContent = 'إجابة خاطئة. حاول مرة أخرى.';
-        feedbackElement.classList.add('incorrect');
-        
-        updatePlayerLeaderboard(); 
-    }
+        if (currentQuestionIndex >= allQuestions.length) {
+            return;
+        }
+
+        const userAnswer = document.getElementById('answerInput').value.trim();
+        const feedbackElement = document.getElementById('feedback');
+        const correctAnswer = allQuestions[currentQuestionIndex].answer;
+
+        feedbackElement.classList.remove('correct', 'incorrect');
+
+        if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+            feedbackElement.textContent = 'إجابة صحيحة! ننتقل للسؤال التالي.';
+            feedbackElement.classList.add('correct');
+
+            // **إرسال الإجابة الصحيحة للخادم لتحديث التقدم**
+            socket.emit('correctAnswer', username, () => {
+                const nextIndex = currentQuestionIndex + 1;
+                setTimeout(() => {
+                    if (nextIndex < allQuestions.length) {
+                        displayQuestion(nextIndex);
+                    } else {
+                        playerWins(username); 
+                    }
+                    // التحديث سيأتي من الخادم عبر 'leaderboardUpdate'
+                }, 1500);
+            });
+
+        } else {
+            // **إرسال الإجابة الخاطئة للخادم لتحديث عداد الأخطاء**
+            socket.emit('incorrectAnswer', username);
+            
+            feedbackElement.textContent = 'إجابة خاطئة. حاول مرة أخرى.';
+            feedbackElement.classList.add('incorrect');
+            
+            // التحديث سيأتي من الخادم عبر 'leaderboardUpdate'
+        }
+    });
 }
 
-// معالجة فوز اللاعب
+// معالجة فوز اللاعب (إرسال إعلان الفوز للخادم)
 function playerWins(username) {
     document.getElementById('quiz-area').classList.add('hidden');
+    document.getElementById('win-message').classList.remove('hidden');
     
-    const globalData = JSON.parse(localStorage.getItem(GLOBAL_STORAGE_KEY) || '{}');
-    
-    if (!globalData.winner) {
-        globalData.winner = username;
-        localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(globalData));
-        document.getElementById('win-message').classList.remove('hidden');
-    } else {
-         document.getElementById('winner-name').textContent = globalData.winner;
-         document.getElementById('global-winner').classList.remove('hidden');
-    }
+    // **إرسال رسالة الفوز للخادم ليُعلن الفائز عالمياً**
+    socket.emit('playerWinsGame', username);
 }
 
 
@@ -275,34 +249,24 @@ if (window.location.pathname.endsWith('admin.html')) {
 }
 
 function initializeAdminPage() {
-    updateAdminLeaderboard();
+    // **نطلب آخر تحديث للوحة الترتيب عند التحميل**
+    socket.emit('requestLeaderboard');
     
-    // إضافة زر إعادة التعيين
+    // إضافة زر إعادة التعيين (الذي سيُرسل أمرًا للخادم)
     const container = document.querySelector('.container');
     const resetButton = document.createElement('button');
-    resetButton.textContent = 'إعادة تعيين اللعبة (لجميع اللاعبين محلياً)';
-    resetButton.onclick = resetGameLocally;
+    resetButton.textContent = 'إعادة تعيين اللعبة (إرسال أمر للخادم)';
+    resetButton.onclick = resetGameOnServer;
     resetButton.style.marginTop = '20px';
     container.appendChild(resetButton);
 }
 
-// وظيفة إعادة تعيين اللعبة (تنظيف البيانات من هذا المتصفح فقط)
-function resetGameLocally() {
-    if (confirm('هل أنت متأكد من رغبتك في إعادة تعيين اللعبة؟ سيتم مسح تقدم جميع اللاعبين في هذا المتصفح.')) {
-        // إزالة بيانات تقدم اللاعبين
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith('user_progress_') || key.startsWith('user_errors_')) {
-                keysToRemove.push(key);
-            }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-        
-        // إزالة الفائز العالمي
-        localStorage.removeItem(GLOBAL_STORAGE_KEY);
-        
-        alert('تمت إعادة تعيين اللعبة بنجاح (محلياً).');
-        window.location.reload();
+// وظيفة إعادة تعيين اللعبة (إرسال أمر للخادم)
+function resetGameOnServer() {
+    if (confirm('هل أنت متأكد من رغبتك في إعادة تعيين اللعبة؟ سيتم مسح تقدم جميع اللاعبين على الخادم.')) {
+        socket.emit('adminResetGame', () => {
+             alert('تم إرسال أمر إعادة التعيين للخادم. قد تحتاج لإنعاش الصفحة.');
+             window.location.reload();
+        });
     }
 }

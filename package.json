@@ -1,10 +1,14 @@
 {
-  "name": "quiz-game-static",
+  "name": "quiz-game-server",
   "version": "1.0.0",
-  "description": "A static HTML/CSS/JS quiz game.",
+  "description": "Server for real-time quiz game.",
+  "main": "server.js",
   "scripts": {
-    "start": "echo 'This is a static site. No server needed for start.'",
-    "build": "echo 'No build steps required for static files.'"
+    "start": "node server.js",
+    "build": "echo 'No build'"
   },
-  "license": "ISC"
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
 }
