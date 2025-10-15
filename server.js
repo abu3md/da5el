@@ -3,17 +3,24 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
+// **********************************************
+// الإعدادات الثابتة
+// **********************************************
+
+// **القيمة المطلوبة:** عدد الأسئلة الإجمالي في اللعبة.
+const NUM_QUESTIONS = 20; 
+
 // الإعداد الأساسي
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 // **********************************************
-// قاعدة البيانات الوهمية (تخزين بيانات اللاعبين)
+// قاعدة البيانات الوهمية (تخزين حالة اللعبة)
 // **********************************************
-let players = {}; 
+let players = {}; // { 'username': { name, progress, errors, startTime, endTime, isWinner, socketId } }
 let globalWinner = null;
-const NUM_QUESTIONS = 4; // عدد الأسئلة الكلي (تأكد من مطابقته لكود JS)
+
 
 // دالة فرز اللاعبين (الأعلى تقدماً، الأقل أخطاءً، الأسرع وقتاً)
 function getSortedLeaderboard() {
@@ -22,20 +29,30 @@ function getSortedLeaderboard() {
         progress: p.progress,
         errors: p.errors,
         isWinner: p.isWinner,
-        time: p.isWinner ? formatTime(p.endTime - p.startTime) : null // الوقت الآن يُحسب
+        // عرض الوقت فقط إذا كان اللاعب قد أنهى اللعبة (أصبح فائزاً)
+        time: p.isWinner ? formatTime(p.endTime - p.startTime) : null 
     }));
 
     leaderboard.sort((a, b) => {
+        // الفائزون أولاً
         if (a.isWinner && !b.isWinner) return -1;
         if (!a.isWinner && b.isWinner) return 1;
+
+        // حسب التقدم (الأعلى أولاً)
         if (b.progress !== a.progress) return b.progress - a.progress;
+
+        // حسب الأخطاء (الأقل أولاً)
         if (a.errors !== b.errors) return a.errors - b.errors;
+
+        // لا نقوم بالفرز الزمني إلا إذا كانا فائزين أو هناك منطق زمني إضافي
         return 0;
     });
+
     return leaderboard;
 }
 
 function formatTime(ms) {
+    // دالة لتحويل الميلي ثانية إلى تنسيق MM:SS
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -54,7 +71,7 @@ function broadcastLeaderboard() {
 // لخدمة الملفات الثابتة من مجلد 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-// توجيه الصفحة الرئيسية وبقية صفحات اللعبة
+// توجيه الصفحات
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -68,7 +85,6 @@ app.get('/admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-
 // **********************************************
 // منطق Socket.io (التعامل مع التحديثات اللحظية)
 // **********************************************
@@ -76,70 +92,94 @@ app.get('/admin.html', (req, res) => {
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // ... (جميع وظائف socket.on و socket.emit من الكود السابق) ...
-
+    // 1. تسجيل انضمام اللاعب (من login.js)
     socket.on('playerJoin', (username) => {
         if (!players[username]) {
             players[username] = {
-                name: username, progress: 0, errors: 0, 
-                startTime: Date.now(), endTime: null, isWinner: false
+                name: username,
+                progress: 0,
+                errors: 0,
+                startTime: Date.now(),
+                endTime: null,
+                isWinner: false
             };
         }
         players[username].socketId = socket.id;
+        console.log(`Player registered: ${username}`);
         broadcastLeaderboard();
     });
 
+    // 2. طلب حالة اللاعب الفردية
     socket.on('requestPlayerStatus', (username, callback) => {
         const player = players[username] || { progress: 0, errors: 0, isWinner: false };
-        callback(player);
+        callback(player); // إرسال حالة اللاعب كاستجابة فورية
     });
     
+    // 3. طلب قائمة الترتيب والفائز العالمي
     socket.on('requestLeaderboard', () => {
         broadcastLeaderboard();
+    });
+    
+    // 3.1 طلب الفائز العالمي (للتأكد عند التحميل)
+    socket.on('requestGlobalWinner', () => {
         if (globalWinner) {
             socket.emit('globalWinner', globalWinner.name);
         }
     });
 
+    // 4. معالجة الإجابة الصحيحة
     socket.on('correctAnswer', (username, callback) => {
         const player = players[username];
         if (player && player.progress < NUM_QUESTIONS) {
             player.progress++;
+            
+            // تحقق مما إذا كان اللاعب قد أنهى جميع الأسئلة
             if (player.progress === NUM_QUESTIONS) {
                 player.isWinner = true;
                 player.endTime = Date.now();
             }
-            broadcastLeaderboard(); 
+            
+            broadcastLeaderboard(); // إرسال تحديث للجميع
             callback();
         }
     });
 
+    // 5. معالجة الإجابة الخاطئة
     socket.on('incorrectAnswer', (username) => {
         const player = players[username];
         if (player && player.progress < NUM_QUESTIONS) {
             player.errors++;
-            broadcastLeaderboard();
+            broadcastLeaderboard(); // إرسال تحديث للجميع
         }
     });
 
+    // 6. إعلان الفوز باللعبة
     socket.on('playerWinsGame', (username) => {
+        // يسمح بالاعلان مرة واحدة فقط
         if (!globalWinner) {
             globalWinner = players[username];
-            globalWinner.isWinner = true;
-            globalWinner.endTime = Date.now();
-            io.emit('globalWinner', username);
+            // تأكيد حالة الفوز والوقت النهائي
+            if (!globalWinner.isWinner) {
+                 globalWinner.isWinner = true;
+                 globalWinner.endTime = Date.now();
+            }
+
+            io.emit('globalWinner', username); // إرسال إعلان الفائز لجميع الأجهزة
             broadcastLeaderboard();
         }
     });
 
+    // 7. أمر إعادة التعيين من الأدمن
     socket.on('adminResetGame', (callback) => {
-        players = {};
+        players = {}; // تفريغ بيانات اللاعبين
         globalWinner = null;
-        io.emit('globalWinner', null);
+        io.emit('globalWinner', null); // إزالة إعلان الفائز
         broadcastLeaderboard();
         callback();
+        console.log("Game successfully reset by admin.");
     });
-    
+
+    // 8. عند قطع الاتصال
     socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.id}`);
     });
@@ -148,7 +188,8 @@ io.on('connection', (socket) => {
 // **********************************************
 // تشغيل الخادم
 // **********************************************
-const PORT = process.env.PORT || 3000;
+// Render سيستخدم قيمة PORT من بيئة التشغيل
+const PORT = process.env.PORT || 3000; 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
