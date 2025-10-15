@@ -7,19 +7,35 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <img src="icon.png" alt="شعار اللعبة" class="site-icon">
+    <div class="header-right">
+        <img src="icon.png" alt="شعار اللعبة" class="site-icon">
+        
+        <a href="https://discord.gg/vanderlande" target="_blank" class="discord-link">
+            https://discord.gg/vanderlande
+        </a>
+    </div>
+
+    <div id="leaderboard-container" class="leaderboard-container player-view">
+        <h3 class="leaderboard-title">ترتيب اللاعبين</h3>
+        <ul id="leaderboard-list">
+            </ul>
+    </div>
+    
     <div class="container">
         <h1 id="welcomeMessage">أهلاً بك، <span id="displayName"></span>!</h1>
+        
         <div id="quiz-area">
             <p id="currentQuestion" class="question-text">السؤال يظهر هنا...</p>
             <input type="text" id="answerInput" placeholder="أدخل إجابتك هنا">
             <button onclick="checkAnswer()">تحقق من الإجابة</button>
             <p id="feedback" class="feedback"></p>
         </div>
+        
         <div id="win-message" class="hidden">
             <h2>تهانينا! لقد أنهيت جميع الأسئلة!</h2>
             <p>انتظر إعلان الفائز!</p>
         </div>
+        
         <div id="global-winner" class="hidden winner-banner">
             <h2>انتهت اللعبة! الفائز هو: <span id="winner-name"></span></h2>
         </div>

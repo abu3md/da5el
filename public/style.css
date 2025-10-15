@@ -1,20 +1,27 @@
-/* الألوان المقترحة للتناسق مع #b40001: 
-   اللون الرئيسي (القوي): #b40001
-   لون ثانوي (نص/عناوين): #730000 (درجة أغمق)
-   لون للتحقق/نجاح (لونه الأزرق القديم): #093e58
-*/
-
+/* مخطط ألوان النمط الداكن (Dark Mode) */
 :root {
-    --primary-color: #b40001;          /* اللون الرئيسي المطلوب */
-    --accent-color: #730000;           /* لون عناوين وظلال متناسق */
-    --success-color: #093e58;          /* اللون الأزرق القديم للاجابات الصحيحة */
-    --error-color: var(--primary-color); /* استخدام الرئيسي للأخطاء */
-    --text-color: #26102e;             /* لون النص (القائمة القديمة) */
+    --primary-color: #b40001;           /* اللون الرئيسي (أحمر داكن) */
+    --accent-color: #ff4d4d;            /* لون الإبراز الفاتح (للنصوص والعناوين) */
+    --background-dark: #1e1e1e;         /* خلفية الشاشة الأساسية الداكنة */
+    --surface-dark: #2c2c2c;            /* خلفية اللوحات والعناصر (أقل قتامة قليلاً) */
+    --input-dark: #404040;              /* خلفية مربعات الإدخال */
+    --text-light: #ffffff;              /* لون النص الأساسي */
+    --success-color: #00b894;           /* أخضر (اجابة صحيحة) */
+    --error-color: var(--primary-color); /* أحمر (اجابة خاطئة) */
 }
 
-/* 1. خلفية الموقع في كل الصفحات */
+/* تضمين الخط: يجب أن يكون ملف الخط متاحًا في مجلد "fonts" مثلاً */
+@font-face {
+    font-family: 'HS Headline';
+    src: url('fonts/HSHeadline.woff2') format('woff2'),
+         url('fonts/HSHeadline.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* تطبيق الخط الجديد على كامل الجسم */
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'HS Headline', 'Arial', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -23,114 +30,355 @@ body {
     direction: rtl; 
     text-align: right;
     
-    /* تطبيق الخلفية */
-    background-image: url('back.png');
+    /* تطبيق الخلفية الداكنة */
+    background-image: url('back.png'); 
     background-size: cover;
     background-attachment: fixed;
-    background-color: #f4f4f9; /* لون احتياطي */
+    background-color: var(--background-dark); 
+    color: var(--text-light); /* نص فاتح افتراضي */
 }
 
-/* 2. الشعار في الزاوية (في كل الصفحات) */
-.site-icon {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    width: 60px; /* يمكن تعديل الحجم */
-    height: 60px;
-    z-index: 1000;
-}
+/* ---------------------------------------------------- */
+/* تنسيق صفحة البداية (index.html) */
+/* ---------------------------------------------------- */
 
-/* تصميم صفحة البداية (index.html) */
 .start-page-body {
-    background-color: transparent; /* إزالة الخلفية البيضاء على صفحة البداية */
-    justify-content: center;
-    align-items: center;
+    display: block;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    margin: 0;
+    overflow: hidden; 
 }
 
 .start-container {
-    display: flex;
-    flex-direction: column;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    
+    display: flex; 
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.9); /* خلفية بيضاء شفافة */
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    justify-content: flex-end; /* تحريك المحتوى إلى الأسفل */
+    flex-direction: column; 
+    
+    padding-bottom: 10vh; /* ترك مساحة فارغة في أسفل الصفحة */
 }
 
-.start-image {
-    max-width: 100%;
-    width: 300px;
-    height: auto;
-    margin-bottom: 30px;
+/* جعل الصورة تملأ الخلفية بالكامل */
+.start-image-full {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; 
+    z-index: 1; 
+    border: none;
+    border-radius: 0;
+}
+
+/* جعل الزر يظهر فوق الصورة وفي الثلث السفلي */
+.start-button-overlay {
+    z-index: 10;
+    position: relative; 
+    width: 250px; 
+    padding: 15px 30px;
+    font-size: 1.5em;
+    background-color: rgba(180, 0, 1, 0.85); 
+    border: 3px solid var(--text-light);
     border-radius: 10px;
+    margin-bottom: 20px; 
 }
 
+.start-button-overlay:hover {
+    background-color: var(--primary-color);
+}
 
-/* تعديلات الألوان العامة */
+/* ---------------------------------------------------- */
+/* تنسيق الشعار والرابط (باقي الصفحات) */
+/* ---------------------------------------------------- */
+
+.header-right {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    display: flex; 
+    align-items: center;
+    z-index: 1000;
+    gap: 10px; 
+}
+
+.site-icon {
+    width: 60px; 
+    height: 60px;
+    object-fit: contain; 
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid var(--accent-color); 
+    box-shadow: 0 0 15px rgba(255, 77, 77, 0.5); 
+    background-color: var(--surface-dark);
+    transition: transform 0.3s;
+}
+
+.site-icon:hover {
+    transform: scale(1.05); 
+}
+
+/* تصميم الرابط كنص URL داكن */
+.discord-link {
+    color: var(--text-light); 
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 5px;
+    background-color: var(--surface-dark); 
+    border: 1px solid var(--primary-color);
+    transition: background-color 0.3s, color 0.3s;
+    
+    overflow-wrap: break-word; 
+    max-width: 200px; 
+    text-align: left; 
+    direction: ltr; 
+}
+
+.discord-link:hover {
+    background-color: var(--primary-color); 
+    color: var(--text-light);
+}
+
+/* ---------------------------------------------------- */
+/* تنسيق لوحة ترتيب اللاعبين (Leaderboard) */
+/* ---------------------------------------------------- */
+
+.leaderboard-container {
+    position: fixed;
+    top: 15px;
+    left: 15px; /* تثبيت في الزاوية اليسرى */
+    width: 250px;
+    max-height: 90vh;
+    padding: 15px;
+    background-color: var(--surface-dark);
+    border: 2px solid var(--primary-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    overflow-y: auto; 
+}
+
+.leaderboard-title {
+    color: var(--accent-color);
+    text-align: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--input-dark);
+    padding-bottom: 5px;
+    font-size: 1.1em;
+}
+
+#leaderboard-list, #admin-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--input-dark);
+    font-size: 0.9em;
+}
+
+.leaderboard-item:last-child {
+    border-bottom: none;
+}
+
+/* لون اللاعب الأعلى (المركز الأول) */
+.leaderboard-item.rank-1 {
+    font-weight: bold;
+    color: gold;
+    background-color: var(--background-dark);
+    padding: 8px;
+    border-radius: 5px;
+}
+
+/* تفاصيل الأدمن (Admin View Details) */
+.admin-detail-item {
+    font-size: 0.8em;
+    color: #aaaaaa; 
+    margin-top: 4px;
+    display: block;
+}
+
+/* ---------------------------------------------------- */
+/* التنسيق العام واللوحات (باقي الصفحات) */
+/* ---------------------------------------------------- */
 
 .container {
-    background-color: #fff;
+    background-color: var(--surface-dark); 
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); 
     width: 90%;
     max-width: 500px;
+    border-top: 5px solid var(--primary-color); 
 }
 
 h1 {
-    color: var(--accent-color); /* لون عناوين متناسق */
+    color: var(--accent-color); 
     text-align: center;
     margin-bottom: 25px;
+    border-bottom: 2px dashed var(--input-dark);
+    padding-bottom: 10px;
+}
+
+.login-box, #quiz-area {
+    padding: 20px;
+    border: 1px solid var(--input-dark);
+    border-radius: 8px;
+    background-color: var(--background-dark); 
+}
+
+/* لوحة الإجابة (Input) */
+input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    box-sizing: border-box;
+    color: var(--text-light); 
+    background-color: var(--input-dark); 
+    border: 2px solid var(--primary-color); 
+    border-radius: 8px;
+    transition: border-color 0.3s;
+}
+
+input[type="text"]:focus {
+    border-color: var(--accent-color); 
+    outline: none;
 }
 
 button {
-    background-color: var(--primary-color); /* لون الزر الأساسي */
-    color: white;
-    padding: 10px 15px;
+    background-color: var(--primary-color); 
+    color: var(--text-light);
+    padding: 12px 15px; 
     border: none;
-    border-radius: 5px;
+    border-radius: 8px; 
     cursor: pointer;
     width: 100%;
     font-size: 16px;
-    transition: background-color 0.3s;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: background-color 0.3s, transform 0.1s;
 }
 
 button:hover {
-    background-color: var(--accent-color);
+    background-color: var(--accent-color); 
+    color: var(--background-dark); 
+}
+
+button:active {
+    transform: scale(0.98);
 }
 
 .question-text {
-    font-size: 1.2em;
-    color: var(--text-color);
+    font-size: 1.3em; 
+    color: var(--accent-color); 
     font-weight: bold;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: var(--surface-dark); 
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-/* الألوان الخاصة بالتنبيهات */
+.feedback {
+    margin-top: 15px;
+    font-weight: bold;
+    min-height: 20px; 
+    padding: 5px;
+    text-align: center;
+}
+
+/* تنبيهات (صحيح/خاطئ) */
 .correct {
-    color: var(--success-color); /* اللون الأزرق للاجابة الصحيحة */
+    color: var(--success-color); 
+    background-color: #00362b; 
+    border: 1px solid var(--success-color);
+    border-radius: 5px;
 }
 
 .incorrect, .error {
-    color: var(--error-color); /* اللون الأحمر المتناسق للخاطئ */
+    color: var(--error-color); 
+    background-color: #4d0000; 
+    border: 1px solid var(--error-color);
+    border-radius: 5px;
+}
+
+.hidden {
+    display: none !important;
 }
 
 .winner-banner {
     background-color: var(--primary-color);
-    color: white;
-    padding: 15px;
-    border-radius: 8px;
+    color: var(--text-light);
+    padding: 20px;
+    border-radius: 10px;
     text-align: center;
     margin-top: 20px;
+    font-size: 1.2em;
+    animation: pulse 1.5s infinite; 
 }
 
-/* تعديل ألوان الأدمن */
+/* مفتاح حركة (Animation) */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 var(--primary-color);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(180, 0, 1, 0); 
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(180, 0, 1, 0);
+    }
+}
+
+/* تصميم لوحة الأدمن (القديم - تم استبداله باللوحة الجديدة في HTML) */
 #players-status {
-    margin-top: 20px;
-    border: 1px solid var(--accent-color);
-    padding: 15px;
-    border-radius: 8px;
+    /* تم استبداله بـ #leaderboard-container-admin */
+    display: none;
 }
 .player-status-item p strong {
     color: var(--accent-color);
 }
+/* ... (كود CSS السابق) ... */
+
+/* ---------------------------------------------------- */
+/* تنسيق لوحة ترتيب اللاعبين (Leaderboard) */
+/* ---------------------------------------------------- */
+
+/* ... (الخصائص السابقة) ... */
+
+/* لون اللاعب الأعلى (المركز الأول) */
+.leaderboard-item.rank-1 {
+    font-weight: bold;
+    color: gold;
+    background-color: var(--background-dark);
+    padding: 8px;
+    border-radius: 5px;
+}
+
+/* تمييز اللاعب الحالي */
+.leaderboard-item.current-player {
+    border-right: 4px solid var(--accent-color); /* شريط جانبي أحمر بارز */
+    padding-right: 4px;
+    font-weight: bold;
+}
+
+/* تفاصيل الأدمن (Admin View Details) */
+/* ... (الخصائص السابقة) ... */
