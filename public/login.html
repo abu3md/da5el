@@ -3,27 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول - لعبة الألغاز</title>
+    <title>تسجيل الدخول</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div class="header-right">
-      <img src="icon.png" alt="شعار اللعبة" class="site-icon">
-      
-      <a href="https://discord.gg/vanderlande" target="_blank" class="discord-link">
-          https://discord.gg/vanderlande
-      </a>
-  </div>
+<body class="start-page-body">
+    <div class="header-right">
+        <img src="icon.png" alt="شعار اللعبة" class="site-icon">
+        
+        <a href="https://discord.gg/vanderlande" target="_blank" class="discord-link">
+            https://discord.gg/vanderlande
+        </a>
+    </div>
 
     <div class="container">
-        <h1>لعبة الألغاز</h1>
+        <h1>سجل الدخول لبدء اللعبة</h1>
+        
         <div class="login-box">
-            <p>أدخل اسم المستخدم للمتابعة:</p>
-            <input type="text" id="usernameInput" placeholder="اسم المستخدم">
-            <button onclick="login()">دخول</button>
-            <p id="error-message" class="error"></p>
+            <input type="text" id="usernameInput" placeholder="أدخل اسم المستخدم (باللغة الإنجليزية)" required>
+            <button onclick="login()">دخول اللعبة</button>
+            <p id="error-message" class="feedback error"></p>
         </div>
     </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

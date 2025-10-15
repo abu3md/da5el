@@ -18,7 +18,8 @@
     <div id="leaderboard-container" class="leaderboard-container player-view">
         <h3 class="leaderboard-title">ترتيب اللاعبين</h3>
         <ul id="leaderboard-list">
-            </ul>
+            <li>جارٍ تحميل الترتيب...</li>
+        </ul>
     </div>
     
     <div class="container">
@@ -33,13 +34,15 @@
         
         <div id="win-message" class="hidden">
             <h2>تهانينا! لقد أنهيت جميع الأسئلة!</h2>
-            <p>انتظر إعلان الفائز!</p>
+            <p>انتظر إعلان الفائز العالمي! 🎉</p>
         </div>
         
         <div id="global-winner" class="hidden winner-banner">
             <h2>انتهت اللعبة! الفائز هو: <span id="winner-name"></span></h2>
         </div>
     </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

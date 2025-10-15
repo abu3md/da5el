@@ -1,28 +1,33 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الأدمن</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="header-right">
         <img src="icon.png" alt="شعار اللعبة" class="site-icon">
+        
         <a href="https://discord.gg/vanderlande" target="_blank" class="discord-link">
             https://discord.gg/vanderlande
         </a>
     </div>
 
-    <div class="container admin-container">
+    <div class="container">
         <h1>لوحة تحكم الأدمن</h1>
-        <p>مرحباً يا <span style="color: var(--accent-color);">ADMIN</span>. إليك حالة اللاعبين:</p>
         
-        <div id="leaderboard-container-admin" class="leaderboard-container admin-view">
-            <h3 class="leaderboard-title">حالة اللاعبين الحالية</h3>
+        <div id="admin-leaderboard" class="leaderboard-container admin-view">
+            <h3 class="leaderboard-title">الترتيب التفصيلي للاعبين</h3>
             <ul id="admin-list">
-                </ul>
+                <li class="leaderboard-item">جارٍ تحميل البيانات من الخادم...</li>
+            </ul>
         </div>
         
-        <p style="margin-top: 20px;">**ملاحظة:** البيانات المعروضة وهمية. التحديث اللحظي يتطلب خادم.</p>
-    </div>
+        </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

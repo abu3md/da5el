@@ -1,6 +1,7 @@
 const ADMIN_USER = "sam123#";
+
+// قائمة الأسئلة والأجوبة
 const allQuestions = [
-    // ... (احتفظ بجميع أسئلتك هنا) ...
     { question: "ما هو الشيء الذي كلما أخذت منه كبر؟", answer: "الحفرة" },
     { question: "ما الشيء الذي يتكلم جميع لغات العالم؟", answer: "الصدى" },
     { question: "ما هو الشيء الذي إن دخل الماء لا يبتل؟", answer: "الظل" },
@@ -11,9 +12,9 @@ const allQuestions = [
 // الإعداد لـ Socket.io (الربط بالخادم)
 // ******************************************************
 
-// الاتصال بالخادم. سيتم الاتصال تلقائياً بخادم Render الذي تشغل عليه الملف.
+// الاتصال بالخادم. (يفترض أن يكون الخادم يعمل على نفس المنفذ/الرابط)
 const socket = io();
-let username = localStorage.getItem('current_user');
+let username = localStorage.getItem('current_user'); // نستخدم localStorage لحفظ الاسم فقط
 
 // ******************************************************
 // وظائف لوحة الترتيب (Leaderboard Functions)
@@ -70,7 +71,6 @@ function updateAdminLeaderboardDisplay(players) {
 
         const status = player.progress >= allQuestions.length ? 'انتهى 🎉' : `سؤال ${player.progress + 1}/${allQuestions.length}`;
         
-        // الوقت والأخطاء تأتي من الخادم
         const timeDetail = player.time || 'N/A'; 
         const errors = player.errors || 0;
 
@@ -111,9 +111,8 @@ socket.on('globalWinner', (winnerName) => {
 // وظائف منطق اللعبة
 // ******************************************************
 
-// 1. منطق تسجيل الدخول
+// 1. منطق تسجيل الدخول (يعمل في login.html)
 function login() {
-    // ... (الكود لم يتغير: يستخدم localStorage لتخزين 'current_user' فقط)
     const usernameInput = document.getElementById('usernameInput');
     const errorMessage = document.getElementById('error-message');
     const inputUsername = usernameInput.value.trim();
@@ -125,26 +124,26 @@ function login() {
         return;
     }
     
-    // حفظ اسم المستخدم فقط محلياً
+    // حفظ اسم المستخدم محلياً (هذا فقط لنتذكره في الجلسات التالية)
     localStorage.setItem('current_user', inputUsername);
-    username = inputUsername; // تحديث المتغير المحلي
+    username = inputUsername; 
 
     if (username === ADMIN_USER) {
         window.location.href = 'admin.html';
     } else {
-        // **إرسال طلب الانضمام وتسجيل اللاعب الجديد للخادم**
+        // إرسال طلب الانضمام وتسجيل اللاعب الجديد للخادم
         socket.emit('playerJoin', username);
-        window.location.href = 'player.html';
+        window.location.href = 'player.html'; 
     }
 }
 
-// 2. منطق صفحة اللاعب
+// 2. منطق صفحة اللاعب (يعمل في player.html)
 if (window.location.pathname.endsWith('player.html')) {
     document.addEventListener('DOMContentLoaded', initializePlayerPage);
 }
 
 function initializePlayerPage() {
-    // ... (الكود لم يتغير: التحقق من اسم المستخدم والفائز)
+    username = localStorage.getItem('current_user');
 
     if (!username || username === ADMIN_USER) {
         window.location.href = 'login.html';
@@ -153,18 +152,18 @@ function initializePlayerPage() {
 
     document.getElementById('displayName').textContent = username;
     
-    // **بدلاً من التحقق من localStorage، نطلب الحالة من الخادم**
+    // عند تحميل الصفحة، نطلب حالة اللاعب من الخادم
     socket.emit('requestPlayerStatus', username, (playerStatus) => {
-        if (playerStatus.isWinner) {
-             socket.emit('requestGlobalWinner'); // لضمان عرض الفائز
-             return;
-        }
+        
+        // إذا كان هناك فائز عالمي مُعلن، لا تعرض السؤال
+        socket.emit('requestGlobalWinner'); // لضمان استقبال إعلان الفائز
 
         if (playerStatus.progress < allQuestions.length) {
             displayQuestion(playerStatus.progress);
             document.getElementById('quiz-area').classList.remove('hidden');
         } else {
-            playerWins(username); // إذا كان تقدمه مكتملًا
+            // اللاعب أنهى الأسئلة (لكن ليس هو الفائز العالمي بالضرورة)
+            playerWins(username); 
         }
     });
 
@@ -173,7 +172,6 @@ function initializePlayerPage() {
 }
 
 function displayQuestion(index) {
-    // ... (الكود لم يتغير)
     const questionElement = document.getElementById('currentQuestion');
     const feedbackElement = document.getElementById('feedback');
     const inputElement = document.getElementById('answerInput');
@@ -190,7 +188,7 @@ function displayQuestion(index) {
 function checkAnswer() {
     if (!username) return; 
 
-    // **نطلب التقدم الحالي من الخادم للتحقق من الإجابة**
+    // نطلب التقدم الحالي من الخادم للتحقق من الإجابة
     socket.emit('requestPlayerStatus', username, (playerStatus) => {
         let currentQuestionIndex = playerStatus.progress;
         
@@ -208,7 +206,7 @@ function checkAnswer() {
             feedbackElement.textContent = 'إجابة صحيحة! ننتقل للسؤال التالي.';
             feedbackElement.classList.add('correct');
 
-            // **إرسال الإجابة الصحيحة للخادم لتحديث التقدم**
+            // إرسال الإجابة الصحيحة للخادم لتحديث التقدم
             socket.emit('correctAnswer', username, () => {
                 const nextIndex = currentQuestionIndex + 1;
                 setTimeout(() => {
@@ -217,18 +215,15 @@ function checkAnswer() {
                     } else {
                         playerWins(username); 
                     }
-                    // التحديث سيأتي من الخادم عبر 'leaderboardUpdate'
                 }, 1500);
             });
 
         } else {
-            // **إرسال الإجابة الخاطئة للخادم لتحديث عداد الأخطاء**
+            // إرسال الإجابة الخاطئة للخادم لتحديث عداد الأخطاء
             socket.emit('incorrectAnswer', username);
             
             feedbackElement.textContent = 'إجابة خاطئة. حاول مرة أخرى.';
             feedbackElement.classList.add('incorrect');
-            
-            // التحديث سيأتي من الخادم عبر 'leaderboardUpdate'
         }
     });
 }
@@ -238,18 +233,18 @@ function playerWins(username) {
     document.getElementById('quiz-area').classList.add('hidden');
     document.getElementById('win-message').classList.remove('hidden');
     
-    // **إرسال رسالة الفوز للخادم ليُعلن الفائز عالمياً**
+    // إرسال رسالة الفوز للخادم ليُعلن الفائز عالمياً
     socket.emit('playerWinsGame', username);
 }
 
 
-// 3. منطق صفحة الأدمن
+// 3. منطق صفحة الأدمن (يعمل في admin.html)
 if (window.location.pathname.endsWith('admin.html')) {
     document.addEventListener('DOMContentLoaded', initializeAdminPage);
 }
 
 function initializeAdminPage() {
-    // **نطلب آخر تحديث للوحة الترتيب عند التحميل**
+    // نطلب آخر تحديث للوحة الترتيب عند التحميل
     socket.emit('requestLeaderboard');
     
     // إضافة زر إعادة التعيين (الذي سيُرسل أمرًا للخادم)
@@ -265,7 +260,7 @@ function initializeAdminPage() {
 function resetGameOnServer() {
     if (confirm('هل أنت متأكد من رغبتك في إعادة تعيين اللعبة؟ سيتم مسح تقدم جميع اللاعبين على الخادم.')) {
         socket.emit('adminResetGame', () => {
-             alert('تم إرسال أمر إعادة التعيين للخادم. قد تحتاج لإنعاش الصفحة.');
+             alert('تم إرسال أمر إعادة التعيين للخادم. ستتم إعادة التحميل الآن.');
              window.location.reload();
         });
     }
