@@ -2,17 +2,9 @@
   "name": "quiz-game-static",
   "version": "1.0.0",
   "description": "A static HTML/CSS/JS quiz game.",
-  "main": "public/script.js",
   "scripts": {
     "start": "echo 'This is a static site. No server needed for start.'",
     "build": "echo 'No build steps required for static files.'"
   },
-  "keywords": [
-    "html",
-    "css",
-    "javascript",
-    "static"
-  ],
-  "author": "",
   "license": "ISC"
 }
