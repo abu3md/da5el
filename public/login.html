@@ -1,78 +1,21 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>دخول اللعبة</title>
-<style>
-  body{font-family:Tahoma, Arial; margin:0; background:#0b1220; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh;}
-  .card{background:rgba(255,255,255,0.04); padding:28px; border-radius:10px; text-align:center; width:320px; box-shadow:0 6px 24px rgba(0,0,0,0.6);}
-  input{width:100%; padding:10px; border-radius:6px; border:1px solid #333; margin:10px 0; background:#0f1724; color:#fff}
-  button{padding:10px 18px; border-radius:6px; border:none; background:#1d9bf0; color:#fff; cursor:pointer}
-  .note{font-size:13px; color:#ccc; margin-top:8px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - لعبة الألغاز</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="card">
-    <h2>أدخل اسمك</h2>
-    <input id="name" placeholder="أدخل اسم المستخدم (مثال: Sam@123)" />
-    <div style="display:flex; gap:8px; justify-content:center;">
-      <button id="enterBtn">دخول</button>
-      <button id="clearBtn" style="background:#666">مسح الحالة</button>
+    <div class="container">
+        <h1>لعبة الألغاز</h1>
+        <div class="login-box">
+            <p>أدخل اسم المستخدم للمتابعة:</p>
+            <input type="text" id="usernameInput" placeholder="اسم المستخدم">
+            <button onclick="login()">دخول</button>
+            <p id="error-message" class="error"></p>
+        </div>
     </div>
-    <p class="note">إذا كتبت <b>Sam@123</b> تدخل كأدمن. أي اسم آخر تدخل كلاعب عادي.</p>
-  </div>
-
-<script>
-(function(){
-  const nameInput = document.getElementById('name');
-  const enterBtn = document.getElementById('enterBtn');
-  const clearBtn = document.getElementById('clearBtn');
-
-  // Broadcast channel للتزامن
-  const channel = new BroadcastChannel('game-channel');
-
-  function goTo(page){
-    window.location.href = page;
-  }
-
-  enterBtn.addEventListener('click', () => {
-    const name = nameInput.value.trim();
-    if (!name) return alert('أدخل اسمًا');
-    // نحفظ اللاعب محليًا
-    const id = 'p-' + Date.now() + '-' + Math.floor(Math.random()*1000);
-    const player = { id, name, role: (name==='Sam@123'?'admin':'player'), team: null, points: 0 };
-    // إضافة إلى قائمة اللاعبين في localStorage
-    const stored = JSON.parse(localStorage.getItem('players') || '[]').filter(Boolean);
-    stored.push(player);
-    localStorage.setItem('players', JSON.stringify(stored));
-    // نخبر بقية النوافذ
-    channel.postMessage({ type:'playerJoin', player, ts: Date.now() });
-    // نحفظ آخر لاعب مسجل محليًا لاستخدامه في player.html
-    localStorage.setItem('currentPlayerId', player.id);
-    // التوجيه
-    if (player.role === 'admin') goTo('admin.html');
-    else goTo('player.html');
-  });
-
-  clearBtn.addEventListener('click', () => {
-    if (!confirm('مسح كل حالة اللعبة (اللاعبين والنقاط)؟')) return;
-    localStorage.removeItem('players');
-    localStorage.removeItem('teams');
-    localStorage.removeItem('currentTurn');
-    localStorage.removeItem('currentPlayerId');
-    channel.postMessage({ type:'reset', ts: Date.now() });
-    alert('تم المسح');
-  });
-
-  // لو فتحنا هذه الصفحة بـ currentPlayerId نملأ الاسم تلقائياً
-  const prevId = localStorage.getItem('currentPlayerId');
-  if (prevId){
-    const p = (JSON.parse(localStorage.getItem('players')||'[]')||[]).find(x=>x.id===prevId);
-    if (p) nameInput.value = p.name;
-  }
-
-})();
-</script>
+    <script src="script.js"></script>
 </body>
 </html>

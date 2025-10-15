@@ -1,41 +1,113 @@
 body {
-  margin: 0;
-  font-family: Tahoma, sans-serif;
-  text-align: center;
-  color: white;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f4f4f9;
+    direction: rtl; /* لضمان اللغة العربية */
+    text-align: right;
 }
 
-.background {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: -1;
+.container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 500px;
 }
 
-.icon {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  width: 60px;
-  height: 60px;
-  z-index: 10;
+h1 {
+    color: #26102e; /* لون قائمة السؤال الجديد */
+    text-align: center;
+    margin-bottom: 25px;
 }
 
-.screen {
-  margin-top: 100px;
-  background: rgba(0,0,0,0.5);
-  display: inline-block;
-  padding: 20px;
-  border-radius: 10px;
+.login-box, #quiz-area {
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    background-color: #093e58; /* لون الفريق 1 */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #052a3b;
+}
+
+.question-text {
+    font-size: 1.2em;
+    color: #26102e;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.feedback {
+    margin-top: 15px;
+    font-weight: bold;
+    min-height: 20px; /* للحفاظ على الارتفاع */
+}
+
+.correct {
+    color: #093e58;
+}
+
+.incorrect {
+    color: #681212; /* لون الفريق 2 */
+}
+
+.error {
+    color: #681212;
+    margin-top: 10px;
+    text-align: center;
 }
 
 .hidden {
-  display: none;
+    display: none !important;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
+.winner-banner {
+    background-color: #681212;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* تصميم لوحة الأدمن */
+#players-status {
+    margin-top: 20px;
+    border: 1px solid #26102e;
+    padding: 15px;
+    border-radius: 8px;
+}
+.player-status-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-bottom: 1px dashed #ccc;
+}
+.player-status-item:last-child {
+    border-bottom: none;
 }

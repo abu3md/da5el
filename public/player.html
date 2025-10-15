@@ -1,140 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>واجهة اللاعب</title>
-<style>
-  body{margin:0; font-family:Tahoma, Arial; background:#071021; color:#fff; display:flex; flex-direction:column; align-items:center}
-  header{width:100%; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.03)}
-  .main{display:flex; gap:16px; padding:20px; width:100%; max-width:1100px; box-sizing:border-box}
-  .team{flex:1; background:rgba(255,255,255,0.02); padding:12px; border-radius:8px; min-width:220px}
-  .center{width:360px; display:flex; flex-direction:column; align-items:center; gap:12px}
-  .icons{display:grid; grid-template-columns:repeat(2,140px); gap:10px}
-  .icons img{width:140px; height:140px; border-radius:8px; opacity:0.4; transition:all .2s; border:3px solid transparent}
-  .icons img.on{opacity:1; transform:translateY(-6px); box-shadow:0 10px 30px rgba(0,0,0,0.6)}
-  .points{font-size:20px; font-weight:bold}
-  .meBox{background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px}
-  .wordBox{background:#031025; padding:12px 18px; border-radius:10px; min-width:260px; text-align:center; box-shadow:0 6px 18px rgba(0,0,0,0.6)}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفحة اللاعب</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <div>
-    <strong id="meName">—</strong>
-    <div style="font-size:13px; color:#bbb">واجهة اللاعب</div>
-  </div>
-  <div>
-    <button id="refreshBtn" style="padding:8px 10px; border-radius:6px; border:none; background:#1d9bf0; color:#fff">تحديث</button>
-  </div>
-</header>
-
-<div class="main">
-  <div class="team">
-    <h3>الفريق الأزرق</h3>
-    <div class="points" id="bluePoints">0</div>
-    <ul id="blueList" style="list-style:none; padding:0; margin-top:8px"></ul>
-  </div>
-
-  <div class="center">
-    <div class="meBox">
-      <div>اسمك: <span id="meName2">—</span></div>
-      <div id="roleInfo" style="font-size:13px; color:#ccc">دورك: لاعب</div>
+    <div class="container">
+        <h1 id="welcomeMessage">أهلاً بك، <span id="displayName"></span>!</h1>
+        <div id="quiz-area">
+            <p id="currentQuestion" class="question-text">السؤال يظهر هنا...</p>
+            <input type="text" id="answerInput" placeholder="أدخل إجابتك هنا">
+            <button onclick="checkAnswer()">تحقق من الإجابة</button>
+            <p id="feedback" class="feedback"></p>
+        </div>
+        <div id="win-message" class="hidden">
+            <h2>تهانينا! لقد أنهيت جميع الأسئلة!</h2>
+            <p>انتظر إعلان الفائز!</p>
+        </div>
+        <div id="global-winner" class="hidden winner-banner">
+            <h2>انتهت اللعبة! الفائز هو: <span id="winner-name"></span></h2>
+        </div>
     </div>
-
-    <div class="icons">
-      <img src="anime.png" data-key="anime">
-      <img src="normal.png" data-key="normal">
-      <img src="games.png" data-key="games">
-      <img src="map.png" data-key="map">
-    </div>
-
-    <div class="wordBox" id="wordBox">
-      <div style="font-size:14px; color:#aaa">الموضوع الحالي</div>
-      <div id="theWord" style="font-size:18px; margin-top:8px">—</div>
-    </div>
-  </div>
-
-  <div class="team">
-    <h3>الفريق الأحمر</h3>
-    <div class="points" id="redPoints">0</div>
-    <ul id="redList" style="list-style:none; padding:0; margin-top:8px"></ul>
-  </div>
-</div>
-
-<script>
-/*
-  يقرأ player id من localStorage.currentPlayerId الذي وضع بواسطة login.html
-  يستخدم BroadcastChannel لمزامنة الحالة مع admin.html
-*/
-
-const channel = new BroadcastChannel('game-channel');
-
-const meName = document.getElementById('meName');
-const meName2 = document.getElementById('meName2');
-const roleInfo = document.getElementById('roleInfo');
-const blueList = document.getElementById('blueList');
-const redList = document.getElementById('redList');
-const bluePoints = document.getElementById('bluePoints');
-const redPoints = document.getElementById('redPoints');
-const icons = Array.from(document.querySelectorAll('.icons img'));
-const theWord = document.getElementById('theWord');
-const wordBox = document.getElementById('wordBox');
-const refreshBtn = document.getElementById('refreshBtn');
-
-let meId = localStorage.getItem('currentPlayerId');
-if (!meId) {
-  // إذا لم يكن هناك id، نطلب من المستخدم إعادة الدخول
-  alert('لم يتم العثور على حساب لاعب. ارجع إلى صفحة الدخول وأنشئ مستخدماً.');
-}
-function loadState(){ return { players: JSON.parse(localStorage.getItem('players')||'[]'), teams: JSON.parse(localStorage.getItem('teams')||'{"blue":0,"red":0}'), currentTurn: JSON.parse(localStorage.getItem('currentTurn')||'null') }; }
-
-function render(){
-  const s = loadState();
-  const me = s.players.find(p=>p.id===meId) || {name:'—', role:'player', team:null};
-  meName.textContent = me.name;
-  meName2.textContent = me.name;
-  roleInfo.textContent = `دورك: ${me.role || 'لاعب'} | فريق: ${me.team ? (me.team==='blue'?'أزرق':'أحمر') : '—'}`;
-
-  // قوائم الفريقين
-  blueList.innerHTML=''; redList.innerHTML='';
-  s.players.filter(p=>p.team==='blue').forEach(p=> {
-    const li = document.createElement('li'); li.textContent = `${p.name} (${p.points||0})`; blueList.appendChild(li);
-  });
-  s.players.filter(p=>p.team==='red').forEach(p=> {
-    const li = document.createElement('li'); li.textContent = `${p.name} (${p.points||0})`; redList.appendChild(li);
-  });
-  bluePoints.textContent = s.teams.blue || 0;
-  redPoints.textContent = s.teams.red || 0;
-
-  // حالة الدور الحالي
-  icons.forEach(ic=>ic.classList.remove('on'));
-  if (s.currentTurn && s.currentTurn.iconKey) {
-    const el = icons.find(i=>i.dataset.key === s.currentTurn.iconKey);
-    if (el) el.classList.add('on');
-  }
-
-  // إذا الدور الحالي مخصص لي، أظهر الكلمة
-  if (s.currentTurn && s.currentTurn.playerId === meId) {
-    theWord.textContent = s.currentTurn.topic || '—';
-  } else {
-    theWord.textContent = '—';
-  }
-
-}
-
-channel.onmessage = (ev) => {
-  const d = ev.data || {};
-  if (['stateUpdate','startTurn','endTurn','playerJoin','reset'].includes(d.type || '')) {
-    // إعادة رسم
-    render();
-  }
-};
-
-refreshBtn.addEventListener('click', ()=>render());
-
-// تهيئة
-render();
-</script>
+    <script src="script.js"></script>
 </body>
 </html>
