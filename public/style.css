@@ -1,3 +1,18 @@
+/* الألوان المقترحة للتناسق مع #b40001: 
+   اللون الرئيسي (القوي): #b40001
+   لون ثانوي (نص/عناوين): #730000 (درجة أغمق)
+   لون للتحقق/نجاح (لونه الأزرق القديم): #093e58
+*/
+
+:root {
+    --primary-color: #b40001;          /* اللون الرئيسي المطلوب */
+    --accent-color: #730000;           /* لون عناوين وظلال متناسق */
+    --success-color: #093e58;          /* اللون الأزرق القديم للاجابات الصحيحة */
+    --error-color: var(--primary-color); /* استخدام الرئيسي للأخطاء */
+    --text-color: #26102e;             /* لون النص (القائمة القديمة) */
+}
+
+/* 1. خلفية الموقع في كل الصفحات */
 body {
     font-family: 'Arial', sans-serif;
     display: flex;
@@ -5,10 +20,53 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    background-color: #f4f4f9;
-    direction: rtl; /* لضمان اللغة العربية */
+    direction: rtl; 
     text-align: right;
+    
+    /* تطبيق الخلفية */
+    background-image: url('back.png');
+    background-size: cover;
+    background-attachment: fixed;
+    background-color: #f4f4f9; /* لون احتياطي */
 }
+
+/* 2. الشعار في الزاوية (في كل الصفحات) */
+.site-icon {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    width: 60px; /* يمكن تعديل الحجم */
+    height: 60px;
+    z-index: 1000;
+}
+
+/* تصميم صفحة البداية (index.html) */
+.start-page-body {
+    background-color: transparent; /* إزالة الخلفية البيضاء على صفحة البداية */
+    justify-content: center;
+    align-items: center;
+}
+
+.start-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.9); /* خلفية بيضاء شفافة */
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.start-image {
+    max-width: 100%;
+    width: 300px;
+    height: auto;
+    margin-bottom: 30px;
+    border-radius: 10px;
+}
+
+
+/* تعديلات الألوان العامة */
 
 .container {
     background-color: #fff;
@@ -20,28 +78,13 @@ body {
 }
 
 h1 {
-    color: #26102e; /* لون قائمة السؤال الجديد */
+    color: var(--accent-color); /* لون عناوين متناسق */
     text-align: center;
     margin-bottom: 25px;
 }
 
-.login-box, #quiz-area {
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-}
-
-input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
 button {
-    background-color: #093e58; /* لون الفريق 1 */
+    background-color: var(--primary-color); /* لون الزر الأساسي */
     color: white;
     padding: 10px 15px;
     border: none;
@@ -53,42 +96,27 @@ button {
 }
 
 button:hover {
-    background-color: #052a3b;
+    background-color: var(--accent-color);
 }
 
 .question-text {
     font-size: 1.2em;
-    color: #26102e;
+    color: var(--text-color);
     font-weight: bold;
     margin-bottom: 15px;
 }
 
-.feedback {
-    margin-top: 15px;
-    font-weight: bold;
-    min-height: 20px; /* للحفاظ على الارتفاع */
-}
-
+/* الألوان الخاصة بالتنبيهات */
 .correct {
-    color: #093e58;
+    color: var(--success-color); /* اللون الأزرق للاجابة الصحيحة */
 }
 
-.incorrect {
-    color: #681212; /* لون الفريق 2 */
-}
-
-.error {
-    color: #681212;
-    margin-top: 10px;
-    text-align: center;
-}
-
-.hidden {
-    display: none !important;
+.incorrect, .error {
+    color: var(--error-color); /* اللون الأحمر المتناسق للخاطئ */
 }
 
 .winner-banner {
-    background-color: #681212;
+    background-color: var(--primary-color);
     color: white;
     padding: 15px;
     border-radius: 8px;
@@ -96,18 +124,13 @@ button:hover {
     margin-top: 20px;
 }
 
-/* تصميم لوحة الأدمن */
+/* تعديل ألوان الأدمن */
 #players-status {
     margin-top: 20px;
-    border: 1px solid #26102e;
+    border: 1px solid var(--accent-color);
     padding: 15px;
     border-radius: 8px;
 }
-.player-status-item {
-    margin-bottom: 10px;
-    padding: 10px;
-    border-bottom: 1px dashed #ccc;
-}
-.player-status-item:last-child {
-    border-bottom: none;
+.player-status-item p strong {
+    color: var(--accent-color);
 }
